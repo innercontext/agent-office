@@ -33,6 +33,10 @@
   ],
   "author": "Richard Anaya",
   "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "dependencies": {
     "@toon-format/toon": "^2.1.0",
     "better-sqlite3": "^12.3.1",
