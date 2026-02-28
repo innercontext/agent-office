@@ -15,10 +15,10 @@ describe('Package.json validation', () => {
 
   it('should have required fields', () => {
     const pkg = JSON.parse(readFileSync(packagePath, 'utf-8'))
-    expect(pkg.name).toBe('aocli')
+    expect(pkg.name).toBe('agent-office')
     expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/)
     expect(pkg.type).toBe('module')
-    expect(pkg.bin).toHaveProperty('aocli')
+    expect(pkg.bin).toHaveProperty('agent-office')
   })
 
   it('should have commander dependency', () => {

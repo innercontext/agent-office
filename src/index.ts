@@ -53,11 +53,11 @@ async function getStorage(): Promise<AgentOfficeStorage> {
 const program = new Command()
 
 program
-  .name('aocli')
-  .description('A high-quality TypeScript CLI application')
+  .name('agent-office')
+  .description('A multi-agent office management system CLI')
   .version(packageJson.version)
-  .addOption(new Option('--sqlite <path>', 'SQLite database file path').env('AOCLI_SQLITE'))
-  .addOption(new Option('--postgresql <url>', 'PostgreSQL connection URL').env('AOCLI_POSTGRESQL'))
+  .addOption(new Option('--sqlite <path>', 'SQLite database file path').env('AGENT_OFFICE_SQLITE'))
+  .addOption(new Option('--postgresql <url>', 'PostgreSQL connection URL').env('AGENT_OFFICE_POSTGRESQL'))
   .addOption(new Option('--json', 'Output in JSON format instead of TOON').default(false))
   .hook('preAction', async thisCommand => {
     const opts = thisCommand.opts()

@@ -34,13 +34,13 @@ describe('CLI Integration Tests', () => {
   describe('help command', () => {
     it('should display help with --help flag', () => {
       const output = runCLI('--help')
-      expect(output).toContain('Usage: aocli')
+      expect(output).toContain('Usage: agent-office')
       expect(output).toContain('Commands:')
     })
 
     it('should display help with -h flag', () => {
       const output = runCLI('-h')
-      expect(output).toContain('Usage: aocli')
+      expect(output).toContain('Usage: agent-office')
     })
   })
 
