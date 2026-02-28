@@ -1,8 +1,7 @@
 export interface SessionRow {
   id: number
   name: string
-  session_id: string
-  agent: string
+  coworkerType: string | null
   status: string | null
   description: string | null
   philosophy: string | null

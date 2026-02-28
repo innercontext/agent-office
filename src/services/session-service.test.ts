@@ -18,9 +18,9 @@ describe('SessionService', () => {
     })
 
     it('should return all sessions as coworkers', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       await new Promise(resolve => setTimeout(resolve, 10)) // Ensure different timestamps
-      await storage.createSession('session2', 'id2', 'agent2')
+      await storage.createSession('session2', 'agent2')
 
       const coworkers = await service.listCoworkers()
       expect(coworkers).toHaveLength(2)
@@ -29,18 +29,18 @@ describe('SessionService', () => {
     })
 
     it('should include type and status info', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       await storage.updateSession('session1', { status: 'busy' })
 
       const coworkers = await service.listCoworkers()
-      expect(coworkers[0].type).toBe('agent1')
+      expect(coworkers[0].coworkerType).toBe('agent1')
       expect(coworkers[0].status).toBe('busy')
     })
   })
 
   describe('updateCoworker', () => {
     it('should set status for existing session', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       const updated = await service.updateCoworker('session1', { status: 'available' })
 
@@ -50,7 +50,7 @@ describe('SessionService', () => {
     })
 
     it('should clear status when null is passed', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       await storage.updateSession('session1', { status: 'busy' })
 
       const updated = await service.updateCoworker('session1', { status: null })
@@ -67,25 +67,22 @@ describe('SessionService', () => {
 
   describe('createSession', () => {
     it('should create a new session', async () => {
-      const session = await service.createSession('session1', 'id1', 'agent1')
+      const session = await service.createSession('session1', 'agent1')
 
       expect(session.name).toBe('session1')
-      expect(session.session_id).toBe('id1')
-      expect(session.agent).toBe('agent1')
+      expect(session.coworkerType).toBe('agent1')
     })
 
     it('should throw error when session already exists', async () => {
-      await service.createSession('session1', 'id1', 'agent1')
+      await service.createSession('session1', 'agent1')
 
-      await expect(service.createSession('session1', 'id2', 'agent2')).rejects.toThrow(
-        'Coworker session1 already exists'
-      )
+      await expect(service.createSession('session1', 'agent2')).rejects.toThrow('Coworker session1 already exists')
     })
   })
 
   describe('getSessionByName', () => {
     it('should return session by name', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       const session = await service.getSessionByName('session1')
 
@@ -101,7 +98,7 @@ describe('SessionService', () => {
 
   describe('deleteSession', () => {
     it('should delete existing session', async () => {
-      const session = await storage.createSession('session1', 'id1', 'agent1')
+      const session = await storage.createSession('session1', 'agent1')
 
       await service.deleteSession(session.id)
 

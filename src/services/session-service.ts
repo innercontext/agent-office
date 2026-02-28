@@ -2,7 +2,7 @@ import { AgentOfficeStorage, SessionRow } from '../db/index.js'
 
 export interface CoworkerInfo {
   name: string
-  type: string
+  coworkerType: string | null
   status: string | null
   description: string | null
   philosophy: string | null
@@ -17,7 +17,7 @@ export class SessionService {
     const sessions = await this.storage.listSessions()
     return sessions.map(session => ({
       name: session.name,
-      type: session.agent,
+      coworkerType: session.coworkerType,
       status: session.status,
       description: session.description,
       philosophy: session.philosophy,
@@ -33,7 +33,7 @@ export class SessionService {
     }
     return {
       name: session.name,
-      type: session.agent,
+      coworkerType: session.coworkerType,
       status: session.status,
       description: session.description,
       philosophy: session.philosophy,
@@ -45,7 +45,7 @@ export class SessionService {
   async updateCoworker(
     name: string,
     updates: {
-      agent?: string
+      coworkerType?: string
       status?: string | null
       description?: string | null
       philosophy?: string | null
@@ -60,12 +60,12 @@ export class SessionService {
     return updated!
   }
 
-  async createSession(name: string, sessionId: string, type: string): Promise<SessionRow> {
+  async createSession(name: string, coworkerType: string): Promise<SessionRow> {
     const exists = await this.storage.sessionExists(name)
     if (exists) {
       throw new Error(`Coworker ${name} already exists`)
     }
-    return this.storage.createSession(name, sessionId, type)
+    return this.storage.createSession(name, coworkerType)
   }
 
   async getSessionByName(name: string): Promise<SessionRow | null> {

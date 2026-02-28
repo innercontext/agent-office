@@ -24,11 +24,11 @@ export abstract class AgentOfficeStorageBase implements AgentOfficeStorage {
   abstract listSessions(): Promise<SessionRow[]>
   abstract getSessionByName(name: string): Promise<SessionRow | null>
   abstract getSessionIdByName(name: string): Promise<number | null>
-  abstract createSession(name: string, sessionId: string, agent: string): Promise<SessionRow>
+  abstract createSession(name: string, coworkerType: string): Promise<SessionRow>
   abstract deleteSession(id: number): Promise<void>
   abstract updateSession(
     name: string,
-    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+    updates: Partial<Pick<SessionRow, 'coworkerType' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
   ): Promise<SessionRow | null>
   abstract sessionExists(name: string): Promise<boolean>
   abstract getAllConfig(): Promise<ConfigRow[]>

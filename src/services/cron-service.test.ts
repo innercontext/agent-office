@@ -19,7 +19,7 @@ describe('CronService', () => {
 
     it('should return all cron jobs sorted by name', async () => {
       // Create a session first (required for cron jobs)
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       await service.createCronJob('job-b', 'session1', '0 0 * * *', null, 'Message B')
       await service.createCronJob('job-a', 'session1', '0 0 * * *', null, 'Message A')
@@ -34,8 +34,8 @@ describe('CronService', () => {
 
   describe('listCronJobsForSession', () => {
     it('should return only cron jobs for specified session', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
-      await storage.createSession('session2', 'id2', 'agent2')
+      await storage.createSession('session1', 'agent1')
+      await storage.createSession('session2', 'agent2')
 
       await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Message 1')
       await service.createCronJob('job2', 'session2', '0 0 * * *', null, 'Message 2')
@@ -49,7 +49,7 @@ describe('CronService', () => {
 
   describe('createCronJob', () => {
     it('should create a new cron job', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       const job = await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
@@ -68,7 +68,7 @@ describe('CronService', () => {
     })
 
     it('should throw error when cron job already exists', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
 
       await expect(service.createCronJob('job1', 'session1', '0 12 * * *', null, 'Different message')).rejects.toThrow(
@@ -79,7 +79,7 @@ describe('CronService', () => {
 
   describe('deleteCronJob', () => {
     it('should delete existing cron job', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
 
       await service.deleteCronJob(job.id)
@@ -95,7 +95,7 @@ describe('CronService', () => {
 
   describe('enableCronJob', () => {
     it('should enable disabled cron job', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
       await storage.disableCronJob(job.id)
 
@@ -112,7 +112,7 @@ describe('CronService', () => {
 
   describe('disableCronJob', () => {
     it('should disable enabled cron job', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
       expect(job.enabled).toBe(true)
 
@@ -134,7 +134,7 @@ describe('CronService', () => {
     })
 
     it('should return cron job history sorted by executed_at desc', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
 
       await storage.createCronHistory(job.id, new Date('2024-01-01'), true)
@@ -150,7 +150,7 @@ describe('CronService', () => {
     })
 
     it('should respect limit parameter', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
       const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
 
       await storage.createCronHistory(job.id, new Date(), true)
@@ -170,7 +170,7 @@ describe('CronService', () => {
     })
 
     it('should return all cron requests sorted by requested_at desc', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Message 1')
       await new Promise(resolve => setTimeout(resolve, 10))
@@ -184,7 +184,7 @@ describe('CronService', () => {
     })
 
     it('should filter by status', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       const req1 = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Message 1')
       await storage.updateCronRequestStatus(req1.id, 'approved', 'reviewer1')
@@ -197,8 +197,8 @@ describe('CronService', () => {
     })
 
     it('should filter by coworkerName', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
-      await storage.createSession('session2', 'id2', 'agent2')
+      await storage.createSession('session1', 'agent1')
+      await storage.createSession('session2', 'agent2')
 
       await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Message 1')
       await service.createCronRequest('req2', 'session2', '0 12 * * *', null, 'Message 2')
@@ -212,7 +212,7 @@ describe('CronService', () => {
 
   describe('createCronRequest', () => {
     it('should create a new cron request with pending status', async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
@@ -233,7 +233,7 @@ describe('CronService', () => {
 
   describe('checkCronJob', () => {
     beforeEach(async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
     })
 
     it('should return true when cron job should run this minute', async () => {
@@ -316,7 +316,7 @@ describe('CronService', () => {
 
   describe('getCronRequestById', () => {
     beforeEach(async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
     })
 
     it('should return cron request by id', async () => {
@@ -336,7 +336,7 @@ describe('CronService', () => {
 
   describe('approveCronRequest', () => {
     beforeEach(async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
     })
 
     it('should approve a pending cron request', async () => {
@@ -363,7 +363,7 @@ describe('CronService', () => {
 
   describe('rejectCronRequest', () => {
     beforeEach(async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
     })
 
     it('should reject a pending cron request', async () => {
@@ -390,7 +390,7 @@ describe('CronService', () => {
 
   describe('deleteCronRequest', () => {
     beforeEach(async () => {
-      await storage.createSession('session1', 'id1', 'agent1')
+      await storage.createSession('session1', 'agent1')
     })
 
     it('should delete an existing cron request', async () => {

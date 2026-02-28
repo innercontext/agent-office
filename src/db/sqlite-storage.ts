@@ -33,16 +33,14 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   // Sessions
   async listSessions(): Promise<SessionRow[]> {
     const stmt = this.db.prepare(`
-      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
+      SELECT id, name, coworkerType, status, description, philosophy, visual_description, created_at
       FROM sessions
       ORDER BY created_at DESC
     `)
     const rows = stmt.all() as Array<{
       id: number
       name: string
-      session_id: string
-      agent_code: string
-      agent: string
+      coworkerType: string | null
       status: string | null
       description: string | null
       philosophy: string | null
@@ -57,23 +55,10 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 
   async getSessionByName(name: string): Promise<SessionRow | null> {
     const stmt = this.db.prepare(`
-      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
+      SELECT id, name, coworkerType, status, description, philosophy, visual_description, created_at
       FROM sessions WHERE name = ?
     `)
     const row = stmt.get(name) as any
-    if (!row) return null
-    return {
-      ...row,
-      created_at: new Date(row.created_at),
-    }
-  }
-
-  async getSessionByAgentCode(agentCode: string): Promise<SessionRow | null> {
-    const stmt = this.db.prepare(`
-      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
-      FROM sessions WHERE agent_code = ?
-    `)
-    const row = stmt.get(agentCode) as any
     if (!row) return null
     return {
       ...row,
@@ -87,14 +72,13 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     return row?.id ?? null
   }
 
-  async createSession(name: string, sessionId: string, agent: string): Promise<SessionRow> {
-    const agentCode = randomUUID()
+  async createSession(name: string, coworkerType: string): Promise<SessionRow> {
     const stmt = this.db.prepare(`
-      INSERT INTO sessions (name, session_id, agent_code, agent)
-      VALUES (?, ?, ?, ?)
-      RETURNING id, name, session_id, agent_code, agent, status, created_at
+      INSERT INTO sessions (name, coworkerType)
+      VALUES (?, ?)
+      RETURNING id, name, coworkerType, status, created_at
     `)
-    const row = stmt.get(name, sessionId, agentCode, agent) as any
+    const row = stmt.get(name, coworkerType) as any
     return {
       ...row,
       created_at: new Date(row.created_at),
@@ -123,7 +107,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 
   async updateSession(
     name: string,
-    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+    updates: Partial<Pick<SessionRow, 'coworkerType' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
   ): Promise<SessionRow | null> {
     // Get current session
     const current = this.getSessionByName(name)
@@ -135,9 +119,9 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     const setParts: string[] = []
     const values: any[] = []
 
-    if (updates.agent !== undefined) {
-      setParts.push('agent = ?')
-      values.push(updates.agent)
+    if (updates.coworkerType !== undefined) {
+      setParts.push('coworkerType = ?')
+      values.push(updates.coworkerType)
     }
     if (updates.status !== undefined) {
       setParts.push('status = ?')
@@ -161,7 +145,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }
 
     values.push(name)
-    const sql = `UPDATE sessions SET ${setParts.join(', ')} WHERE name = ? RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at`
+    const sql = `UPDATE sessions SET ${setParts.join(', ')} WHERE name = ? RETURNING id, name, coworkerType, status, description, philosophy, visual_description, created_at`
     const stmt = this.db.prepare(sql)
     const row = stmt.get(...values) as any
     if (!row) return null
@@ -979,6 +963,36 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
             moved_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
           );
           CREATE INDEX IF NOT EXISTS idx_task_history_task_id ON task_history(task_id);
+        `,
+      },
+      {
+        version: 14,
+        name: 'simplify_sessions_table',
+        sql: `
+          -- Create new simplified sessions table
+          CREATE TABLE sessions_new (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            name             TEXT UNIQUE NOT NULL,
+            type             TEXT,
+            status           TEXT,
+            description      TEXT,
+            philosophy       TEXT,
+            visual_description TEXT,
+            created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+          
+          -- Copy data from old table
+          INSERT INTO sessions_new (id, name, type, status, description, philosophy, visual_description, created_at)
+          SELECT id, name, agent, status, description, philosophy, visual_description, created_at FROM sessions;
+          
+          -- Drop old table
+          DROP TABLE sessions;
+          
+          -- Rename new table
+          ALTER TABLE sessions_new RENAME TO sessions;
+          
+          -- Recreate index
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_name ON sessions(name);
         `,
       },
     ]

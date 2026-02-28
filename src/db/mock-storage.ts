@@ -84,12 +84,11 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     return session?.id ?? null
   }
 
-  async createSession(name: string, sessionId: string, agent: string): Promise<SessionRow> {
+  async createSession(name: string, coworkerType: string): Promise<SessionRow> {
     const newSession: SessionRow = {
       id: this.sessionIdCounter++,
       name,
-      session_id: sessionId,
-      agent,
+      coworkerType,
       status: null,
       description: null,
       philosophy: null,
@@ -109,13 +108,13 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
 
   async updateSession(
     name: string,
-    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+    updates: Partial<Pick<SessionRow, 'coworkerType' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
   ): Promise<SessionRow | null> {
     const session = this.sessions.find(s => s.name === name)
     if (!session) {
       return null
     }
-    if (updates.agent !== undefined) session.agent = updates.agent
+    if (updates.coworkerType !== undefined) session.coworkerType = updates.coworkerType
     if (updates.status !== undefined) session.status = updates.status
     if (updates.description !== undefined) session.description = updates.description
     if (updates.philosophy !== undefined) session.philosophy = updates.philosophy

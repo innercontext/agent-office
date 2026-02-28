@@ -10,7 +10,7 @@ describe('CronService - Constraint Handling', () => {
     storage = createMockStorage()
     service = new CronService(storage)
     // Create a session for testing
-    await storage.createSession('test-session', 'id1', 'agent1')
+    await storage.createSession('test-session', 'agent1')
   })
 
   describe('FOREIGN KEY constraint: cron_jobs.session_name references coworkers', () => {
@@ -48,7 +48,7 @@ describe('CronService - Constraint Handling', () => {
     })
 
     it('should allow same cron job name for different coworkers', async () => {
-      await storage.createSession('another-session', 'id2', 'agent2')
+      await storage.createSession('another-session', 'agent2')
 
       const job1 = await service.createCronJob('same-name', 'test-session', '0 0 * * *', null, 'Hello')
       const job2 = await service.createCronJob('same-name', 'another-session', '0 0 * * *', null, 'Hello')

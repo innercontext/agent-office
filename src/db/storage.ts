@@ -39,11 +39,11 @@ export interface AgentOfficeStorage {
   listSessions(): Promise<SessionRow[]>
   getSessionByName(name: string): Promise<SessionRow | null>
   getSessionIdByName(name: string): Promise<number | null>
-  createSession(name: string, sessionId: string, agent: string): Promise<SessionRow>
+  createSession(name: string, coworkerType: string): Promise<SessionRow>
   deleteSession(id: number): Promise<void>
   updateSession(
     name: string,
-    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+    updates: Partial<Pick<SessionRow, 'coworkerType' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
   ): Promise<SessionRow | null>
   sessionExists(name: string): Promise<boolean>
 

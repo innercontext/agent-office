@@ -13,16 +13,16 @@ describe('SessionService - Constraint Handling', () => {
 
   describe('UNIQUE constraint: sessions.name', () => {
     it('should throw error when creating session with duplicate name', async () => {
-      await service.createSession('duplicate', 'id1', 'agent1')
+      await service.createSession('duplicate', 'agent1')
 
-      await expect(service.createSession('duplicate', 'id2', 'agent2')).rejects.toThrow(
+      await expect(service.createSession('duplicate', 'agent2')).rejects.toThrow(
         'Coworker duplicate already exists'
       )
     })
 
     it('should allow creating sessions with different names', async () => {
-      await service.createSession('session1', 'id1', 'agent1')
-      await service.createSession('session2', 'id2', 'agent2')
+      await service.createSession('session1', 'agent1')
+      await service.createSession('session2', 'agent2')
 
       const sessions = await storage.listSessions()
       expect(sessions).toHaveLength(2)
@@ -33,7 +33,7 @@ describe('SessionService - Constraint Handling', () => {
     it('should handle duplicate session_id appropriately', async () => {
       // This constraint is handled at database level
       // Our mock should simulate this behavior
-      await storage.createSession('session1', 'same-id', 'agent1')
+      await storage.createSession('session1', 'agent1')
 
       // In real implementation, this would throw from DB
       // For now, our mock allows it (which is a limitation)

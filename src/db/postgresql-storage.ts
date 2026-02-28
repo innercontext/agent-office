@@ -30,7 +30,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   // Sessions
   async listSessions(): Promise<SessionRow[]> {
     return this.sql<SessionRow[]>`
-      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, created_at
+      SELECT id, name, coworkerType, status, description, philosophy, visual_description, created_at
       FROM sessions
       ORDER BY created_at DESC
     `
@@ -38,16 +38,8 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
 
   async getSessionByName(name: string): Promise<SessionRow | null> {
     const [row] = await this.sql<SessionRow[]>`
-      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, created_at
+      SELECT id, name, coworkerType, status, description, philosophy, visual_description, created_at
       FROM sessions WHERE name = ${name}
-    `
-    return row ?? null
-  }
-
-  async getSessionByAgentCode(agentCode: string): Promise<SessionRow | null> {
-    const [row] = await this.sql<SessionRow[]>`
-      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, created_at
-      FROM sessions WHERE agent_code = ${agentCode}
     `
     return row ?? null
   }
@@ -59,11 +51,11 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     return row?.id ?? null
   }
 
-  async createSession(name: string, sessionId: string, agent: string): Promise<SessionRow> {
+  async createSession(name: string, coworkerType: string): Promise<SessionRow> {
     const [row] = await this.sql<SessionRow[]>`
-      INSERT INTO sessions (name, session_id, agent)
-      VALUES (${name}, ${sessionId}, ${agent})
-      RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, created_at
+      INSERT INTO sessions (name, coworkerType)
+      VALUES (${name}, ${coworkerType})
+      RETURNING id, name, coworkerType, status, description, philosophy, visual_description, created_at
     `
     return row!
   }
@@ -72,27 +64,17 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     await this.sql`DELETE FROM sessions WHERE id = ${id}`
   }
 
-  async regenerateAgentCode(name: string): Promise<SessionRow> {
-    const [row] = await this.sql<SessionRow[]>`
-      UPDATE sessions
-      SET agent_code = gen_random_uuid()
-      WHERE name = ${name}
-      RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, created_at
-    `
-    return row!
-  }
-
   async updateSession(
     name: string,
-    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+    updates: Partial<Pick<SessionRow, 'coworkerType' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
   ): Promise<SessionRow | null> {
     // Build dynamic update using unsafe for conditional fields
     const setParts: string[] = []
     const values: any[] = []
 
-    if (updates.agent !== undefined) {
-      setParts.push('agent = ')
-      values.push(updates.agent)
+    if (updates.coworkerType !== undefined) {
+      setParts.push('coworkerType = ')
+      values.push(updates.coworkerType)
     }
     if (updates.status !== undefined) {
       setParts.push('status = ')
@@ -121,7 +103,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       UPDATE sessions
       SET ${setClause}
       WHERE name = $${values.length + 1}
-      RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
+      RETURNING id, name, coworkerType, status, description, philosophy, visual_description, created_at
     `
     values.push(name)
 
@@ -699,6 +681,18 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
             moved_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
           CREATE INDEX IF NOT EXISTS idx_task_history_task_id ON task_history(task_id);
+        `,
+      },
+      {
+        version: 14,
+        name: 'simplify_sessions_table',
+        sql: `
+          -- Drop unused columns
+          ALTER TABLE sessions DROP COLUMN IF EXISTS session_id;
+          ALTER TABLE sessions DROP COLUMN IF EXISTS agent_code;
+          
+          -- Rename agent to type
+          ALTER TABLE sessions RENAME COLUMN agent TO type;
         `,
       },
     ]

@@ -27,11 +27,10 @@ describe('MockAgentOfficeStorage', () => {
 
   describe('Sessions', () => {
     it('should create and retrieve sessions', async () => {
-      const session = await storage.createSession('test', 'id123', 'agent1')
+      const session = await storage.createSession('test', 'agent1')
 
       expect(session.name).toBe('test')
-      expect(session.session_id).toBe('id123')
-      expect(session.agent).toBe('agent1')
+      expect(session.coworkerType).toBe('agent1')
       expect(session.id).toBeGreaterThan(0)
 
       const retrieved = await storage.getSessionByName('test')
@@ -39,9 +38,9 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should list sessions sorted by created_at desc', async () => {
-      await storage.createSession('first', 'id1', 'agent1')
+      await storage.createSession('first', 'agent1')
       await new Promise(resolve => setTimeout(resolve, 10))
-      await storage.createSession('second', 'id2', 'agent2')
+      await storage.createSession('second', 'agent2')
 
       const sessions = await storage.listSessions()
       expect(sessions[0].name).toBe('second')
@@ -49,7 +48,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should update session status', async () => {
-      await storage.createSession('test', 'id123', 'agent1')
+      await storage.createSession('test', 'agent1')
       await storage.updateSession('test', { status: 'busy' })
 
       const updated = await storage.getSessionByName('test')
@@ -57,7 +56,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should check session existence', async () => {
-      await storage.createSession('exists', 'id123', 'agent1')
+      await storage.createSession('exists', 'agent1')
 
       expect(await storage.sessionExists('exists')).toBe(true)
       expect(await storage.sessionExists('notexists')).toBe(false)
@@ -136,7 +135,7 @@ describe('MockAgentOfficeStorage', () => {
   describe('Cron Jobs', () => {
     beforeEach(async () => {
       // Create a session first (required for cron jobs due to FK constraint simulation)
-      await storage.createSession('test', 'id123', 'agent1')
+      await storage.createSession('test', 'agent1')
     })
 
     it('should create and retrieve cron jobs', async () => {
@@ -180,7 +179,7 @@ describe('MockAgentOfficeStorage', () => {
 
   describe('Cron History', () => {
     beforeEach(async () => {
-      await storage.createSession('test', 'id123', 'agent1')
+      await storage.createSession('test', 'agent1')
     })
 
     it('should create and list cron history', async () => {
@@ -199,7 +198,7 @@ describe('MockAgentOfficeStorage', () => {
 
   describe('Cron Requests', () => {
     beforeEach(async () => {
-      await storage.createSession('test', 'id123', 'agent1')
+      await storage.createSession('test', 'agent1')
     })
 
     it('should create cron requests with pending status', async () => {
