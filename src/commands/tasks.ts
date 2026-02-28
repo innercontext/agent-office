@@ -114,30 +114,5 @@ export async function taskStats(storage: AgentOfficeStorage, useJson: boolean): 
 export async function getTaskHistory(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
   const service = new TaskService(storage)
   const history = await service.getTaskHistory(id)
-
-  // Calculate duration in each column
-  const historyWithDuration = history.map((entry, index) => {
-    const nextEntry = history[index + 1]
-    const duration = nextEntry ? new Date(nextEntry.moved_at).getTime() - new Date(entry.moved_at).getTime() : null
-
-    return {
-      ...entry,
-      duration_ms: duration,
-      duration_human: duration ? formatDuration(duration) : 'current',
-    }
-  })
-
-  console.log(formatOutput(historyWithDuration, useJson))
-}
-
-function formatDuration(ms: number): string {
-  const seconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
-
-  if (days > 0) return `${days}d ${hours % 24}h`
-  if (hours > 0) return `${hours}h ${minutes % 60}m`
-  if (minutes > 0) return `${minutes}m ${seconds % 60}s`
-  return `${seconds}s`
+  console.log(formatOutput(history, useJson))
 }
