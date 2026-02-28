@@ -1,0 +1,42 @@
+{
+  "name": "aocli",
+  "version": "1.0.0",
+  "description": "A high-quality TypeScript CLI application",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "aocli": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "cli",
+    "typescript",
+    "commander"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@toon-format/toon": "^2.1.0",
+    "better-sqlite3": "^12.3.1",
+    "commander": "^14.0.3",
+    "cron-schedule": "^6.0.0",
+    "postgres": "^3.4.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.14",
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
