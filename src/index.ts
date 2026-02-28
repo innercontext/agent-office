@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { Command, Option } from 'commander'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
