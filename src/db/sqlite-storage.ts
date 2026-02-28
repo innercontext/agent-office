@@ -252,6 +252,46 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }))
   }
 
+  async listMessagesBetween(
+    coworker1: string,
+    coworker2: string,
+    startTime?: Date,
+    endTime?: Date
+  ): Promise<MessageRow[]> {
+    let sql = `
+      SELECT id, from_name, to_name, body, read, injected, created_at
+      FROM messages
+      WHERE ((from_name = ? AND to_name = ?) OR (from_name = ? AND to_name = ?))
+    `
+    const params: any[] = [coworker1, coworker2, coworker2, coworker1]
+
+    if (startTime) {
+      sql += ` AND created_at >= ?`
+      params.push(startTime.toISOString())
+    }
+    if (endTime) {
+      sql += ` AND created_at <= ?`
+      params.push(endTime.toISOString())
+    }
+
+    sql += ` ORDER BY created_at ASC`
+
+    const stmt = this.db.prepare(sql)
+    const rows = stmt.all(...params) as Array<{
+      id: number
+      from_name: string
+      to_name: string
+      body: string
+      read: boolean
+      injected: boolean
+      created_at: string
+    }>
+    return rows.map(row => ({
+      ...row,
+      created_at: new Date(row.created_at + 'Z'), // Treat SQLite datetime as UTC
+    }))
+  }
+
   async countUnreadBySender(recipientName: string): Promise<Map<string, number>> {
     const stmt = this.db.prepare(`
       SELECT from_name, COUNT(*) as count

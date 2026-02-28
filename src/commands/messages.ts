@@ -33,3 +33,18 @@ export async function getUnreadMail(
   const messages = await service.getUnreadMail(coworkerName)
   console.log(formatOutput(messages, useJson))
 }
+
+export async function listMessagesBetween(
+  storage: AgentOfficeStorage,
+  coworker1: string,
+  coworker2: string,
+  startTimeIso: string | undefined,
+  endTimeIso: string | undefined,
+  useJson: boolean
+): Promise<void> {
+  const service = new MessageService(storage)
+  const startTime = startTimeIso ? new Date(startTimeIso) : undefined
+  const endTime = endTimeIso ? new Date(endTimeIso) : undefined
+  const messages = await service.listMessagesBetween(coworker1, coworker2, startTime, endTime)
+  console.log(formatOutput(messages, useJson))
+}

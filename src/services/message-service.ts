@@ -46,4 +46,13 @@ export class MessageService {
 
     return unreadMessages
   }
+
+  async listMessagesBetween(
+    coworker1: string,
+    coworker2: string,
+    startTime?: Date,
+    endTime?: Date
+  ): Promise<MessageRow[]> {
+    return this.storage.listMessagesBetween(coworker1, coworker2, startTime, endTime)
+  }
 }

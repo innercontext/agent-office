@@ -168,6 +168,38 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     `
   }
 
+  async listMessagesBetween(
+    coworker1: string,
+    coworker2: string,
+    startTime?: Date,
+    endTime?: Date
+  ): Promise<MessageRow[]> {
+    let conditions: string[] = []
+    const params: any[] = [coworker1, coworker2, coworker2, coworker1]
+    let paramIndex = 5
+
+    // Base condition for bidirectional messaging
+    conditions.push(`((from_name = $1 AND to_name = $2) OR (from_name = $3 AND to_name = $4))`)
+
+    if (startTime) {
+      conditions.push(`created_at >= $${paramIndex++}`)
+      params.push(startTime)
+    }
+    if (endTime) {
+      conditions.push(`created_at <= $${paramIndex++}`)
+      params.push(endTime)
+    }
+
+    const sql = `
+      SELECT id, from_name, to_name, body, read, injected, created_at
+      FROM messages
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY created_at ASC
+    `
+
+    return this.sql.unsafe(sql, params) as Promise<MessageRow[]>
+  }
+
   async countUnreadBySender(recipientName: string): Promise<Map<string, number>> {
     const rows = await this.sql<Array<{ from_name: string; count: bigint }>>`
       SELECT from_name, COUNT(*) as count

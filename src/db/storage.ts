@@ -58,6 +58,7 @@ export interface AgentOfficeStorage {
     filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }
   ): Promise<MessageRow[]>
   listMessagesFromSender(name: string): Promise<MessageRow[]>
+  listMessagesBetween(coworker1: string, coworker2: string, startTime?: Date, endTime?: Date): Promise<MessageRow[]>
   countUnreadBySender(recipientName: string): Promise<Map<string, number>>
   lastMessageAtByCoworker(humanName: string): Promise<Map<string, Date>>
   createMessage(from: string, to: string, body: string): Promise<MessageRow>

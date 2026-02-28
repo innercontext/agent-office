@@ -173,6 +173,27 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
       .map(m => ({ ...m }))
   }
 
+  async listMessagesBetween(
+    coworker1: string,
+    coworker2: string,
+    startTime?: Date,
+    endTime?: Date
+  ): Promise<MessageRow[]> {
+    let filtered = this.messages.filter(
+      m =>
+        (m.from_name === coworker1 && m.to_name === coworker2) || (m.from_name === coworker2 && m.to_name === coworker1)
+    )
+
+    if (startTime) {
+      filtered = filtered.filter(m => m.created_at >= startTime)
+    }
+    if (endTime) {
+      filtered = filtered.filter(m => m.created_at <= endTime)
+    }
+
+    return filtered.sort((a, b) => a.created_at.getTime() - b.created_at.getTime()).map(m => ({ ...m }))
+  }
+
   async countUnreadBySender(recipientName: string): Promise<Map<string, number>> {
     const counts = new Map<string, number>()
     const messages = this.messages.filter(m => m.to_name === recipientName && !m.read)

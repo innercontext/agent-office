@@ -39,6 +39,12 @@ export abstract class AgentOfficeStorageBase implements AgentOfficeStorage {
     filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }
   ): Promise<MessageRow[]>
   abstract listMessagesFromSender(name: string): Promise<MessageRow[]>
+  abstract listMessagesBetween(
+    coworker1: string,
+    coworker2: string,
+    startTime?: Date,
+    endTime?: Date
+  ): Promise<MessageRow[]>
   abstract countUnreadBySender(recipientName: string): Promise<Map<string, number>>
   abstract lastMessageAtByCoworker(humanName: string): Promise<Map<string, Date>>
   abstract markMessageAsRead(id: number): Promise<MessageRow | null>
