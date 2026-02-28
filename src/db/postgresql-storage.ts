@@ -1,6 +1,6 @@
-import postgres from "postgres"
-import { AgentOfficeStorageBase } from "./storage-base.js"
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from "./types.js"
+import postgres from 'postgres'
+import { AgentOfficeStorageBase } from './storage-base.js'
+import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
 
 export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   constructor(private sql: ReturnType<typeof postgres>) {
@@ -11,8 +11,8 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     await this.sql.end()
   }
 
-  async begin<T>(callback: (tx: import("./storage.js").AgentOfficeStorage) => Promise<T>): Promise<T> {
-    return this.sql.begin(async (tx) => {
+  async begin<T>(callback: (tx: import('./storage.js').AgentOfficeStorage) => Promise<T>): Promise<T> {
+    return this.sql.begin(async tx => {
       const txStorage = new AgentOfficePostgresqlStorage(tx as unknown as ReturnType<typeof postgres>)
       return callback(txStorage)
     }) as Promise<T>
@@ -124,20 +124,23 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   }
 
   // Messages
-  async listMessagesForRecipient(name: string, filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }): Promise<MessageRow[]> {
-    const whereClauses: string[] = ["to_name = $1"]
+  async listMessagesForRecipient(
+    name: string,
+    filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }
+  ): Promise<MessageRow[]> {
+    const whereClauses: string[] = ['to_name = $1']
     const params: unknown[] = [name]
 
-    if (filters?.unread) whereClauses.push("read = FALSE")
-    if (filters?.notified === false) whereClauses.push("notified = FALSE")
+    if (filters?.unread) whereClauses.push('read = FALSE')
+    if (filters?.notified === false) whereClauses.push('notified = FALSE')
     if (filters?.olderThanHours !== undefined) {
       whereClauses.push(`created_at < NOW() - INTERVAL '${filters.olderThanHours} hours'`)
     }
 
-    const whereSQL = whereClauses.join(" AND ")
+    const whereSQL = whereClauses.join(' AND ')
     const rows = await this.sql.unsafe<MessageRow[]>(
       `SELECT id, from_name, to_name, body, read, injected, created_at, notified FROM messages WHERE ${whereSQL} ORDER BY created_at DESC`,
-      params as string[],
+      params as string[]
     )
     return rows
   }
@@ -203,7 +206,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   }
 
   async markMessagesAsNotified(ids: number[]): Promise<void> {
-    if (ids.length === 0) return;
+    if (ids.length === 0) return
     await this.sql`UPDATE messages SET notified = TRUE WHERE id = ANY(${ids})`
   }
 
@@ -246,7 +249,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     sessionName: string,
     schedule: string,
     timezone: string | null,
-    message: string,
+    message: string
   ): Promise<CronJobRow> {
     const [row] = await this.sql<CronJobRow[]>`
       INSERT INTO cron_jobs (name, session_name, schedule, timezone, message)
@@ -290,12 +293,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     `
   }
 
-  async createCronHistory(
-    cronJobId: number,
-    executedAt: Date,
-    success: boolean,
-    errorMessage?: string,
-  ): Promise<void> {
+  async createCronHistory(cronJobId: number, executedAt: Date, success: boolean, errorMessage?: string): Promise<void> {
     if (success) {
       await this.sql`
         INSERT INTO cron_history (cron_job_id, executed_at, success)
@@ -354,7 +352,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     sessionName: string,
     schedule: string,
     timezone: string | null,
-    message: string,
+    message: string
   ): Promise<CronRequestRow> {
     const [row] = await this.sql<CronRequestRow[]>`
       INSERT INTO cron_requests (name, session_name, schedule, timezone, message)
@@ -366,9 +364,9 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
 
   async updateCronRequestStatus(
     id: number,
-    status: "approved" | "rejected",
+    status: 'approved' | 'rejected',
     reviewedBy: string,
-    reviewerNotes?: string,
+    reviewerNotes?: string
   ): Promise<CronRequestRow | null> {
     const [row] = await this.sql<CronRequestRow[]>`
       UPDATE cron_requests
@@ -400,7 +398,13 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     return row ?? null
   }
 
-  async createTask(title: string, description: string, assignee: string | null, column: string, dependencies: number[]): Promise<TaskRow> {
+  async createTask(
+    title: string,
+    description: string,
+    assignee: string | null,
+    column: string,
+    dependencies: number[]
+  ): Promise<TaskRow> {
     const [row] = await this.sql<TaskRow[]>`
       INSERT INTO tasks (title, description, assignee, column_name, dependencies)
       VALUES (${title}, ${description}, ${assignee}, ${column}, ${JSON.stringify(dependencies)}::jsonb)
@@ -409,7 +413,10 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     return row!
   }
 
-  async updateTask(id: number, updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>): Promise<TaskRow | null> {
+  async updateTask(
+    id: number,
+    updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>
+  ): Promise<TaskRow | null> {
     const setParts: string[] = []
     const values: any[] = []
     if (updates.title !== undefined) {
@@ -436,7 +443,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     setParts.push('updated_at = NOW()')
     const sql = `UPDATE tasks SET ${setParts.join(', ')} WHERE id = ? RETURNING id, title, description, assignee, column_name as column, dependencies, created_at, updated_at`
     values.push(id)
-    const [row] = await this.sql.unsafe(sql, values) as TaskRow[]
+    const [row] = (await this.sql.unsafe(sql, values)) as TaskRow[]
     return row ?? null
   }
 
@@ -474,7 +481,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     const MIGRATIONS = [
       {
         version: 1,
-        name: "create_sessions",
+        name: 'create_sessions',
         sql: `
           CREATE TABLE IF NOT EXISTS sessions (
             id         SERIAL PRIMARY KEY,
@@ -487,7 +494,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       },
       {
         version: 2,
-        name: "add_agent_code",
+        name: 'add_agent_code',
         sql: `
           ALTER TABLE sessions ADD COLUMN IF NOT EXISTS agent_code UUID NOT NULL DEFAULT gen_random_uuid();
           CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_agent_code ON sessions(agent_code);
@@ -495,7 +502,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       },
       {
         version: 3,
-        name: "create_config_table",
+        name: 'create_config_table',
         sql: `
           CREATE TABLE IF NOT EXISTS config (
             key   VARCHAR(255) PRIMARY KEY,
@@ -507,14 +514,14 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       },
       {
         version: 5,
-        name: "add_mode_to_sessions",
+        name: 'add_mode_to_sessions',
         sql: `
           ALTER TABLE sessions ADD COLUMN IF NOT EXISTS mode VARCHAR(255) NULL;
         `,
       },
       {
         version: 4,
-        name: "create_messages_table",
+        name: 'create_messages_table',
         sql: `
           CREATE TABLE IF NOT EXISTS messages (
             id          SERIAL PRIMARY KEY,
@@ -532,7 +539,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       },
       {
         version: 6,
-        name: "create_cron_tables",
+        name: 'create_cron_tables',
         sql: `
           CREATE TABLE IF NOT EXISTS cron_jobs (
             id            SERIAL PRIMARY KEY,
@@ -561,28 +568,28 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       },
       {
         version: 7,
-        name: "add_status_to_sessions",
+        name: 'add_status_to_sessions',
         sql: `
           ALTER TABLE sessions ADD COLUMN IF NOT EXISTS status TEXT NULL;
         `,
       },
       {
         version: 8,
-        name: "rename_mode_to_agent",
+        name: 'rename_mode_to_agent',
         sql: `
           ALTER TABLE sessions RENAME COLUMN mode TO agent;
         `,
       },
       {
         version: 9,
-        name: "add_notified_to_messages",
+        name: 'add_notified_to_messages',
         sql: `
           ALTER TABLE messages ADD COLUMN IF NOT EXISTS notified BOOLEAN NOT NULL DEFAULT FALSE;
         `,
       },
       {
         version: 10,
-        name: "create_tasks_table",
+        name: 'create_tasks_table',
         sql: `
           CREATE TABLE IF NOT EXISTS tasks (
             id           SERIAL PRIMARY KEY,
@@ -600,7 +607,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       },
       {
         version: 11,
-        name: "create_cron_requests_table",
+        name: 'create_cron_requests_table',
         sql: `
           CREATE TABLE IF NOT EXISTS cron_requests (
             id              SERIAL PRIMARY KEY,
@@ -632,18 +639,15 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     const applied = await this.sql<{ version: number }[]>`
       SELECT version FROM _migrations ORDER BY version
     `
-    const appliedVersions = new Set(applied.map((r) => r.version))
+    const appliedVersions = new Set(applied.map(r => r.version))
 
     for (const migration of MIGRATIONS) {
       if (appliedVersions.has(migration.version)) continue
 
       console.log(`  Applying migration ${migration.version}: ${migration.name}`)
-      await this.sql.begin(async (tx) => {
+      await this.sql.begin(async tx => {
         await tx.unsafe(migration.sql)
-        await tx.unsafe(
-          `INSERT INTO _migrations (version, name) VALUES ($1, $2)`,
-          [migration.version, migration.name],
-        )
+        await tx.unsafe(`INSERT INTO _migrations (version, name) VALUES ($1, $2)`, [migration.version, migration.name])
       })
     }
   }

@@ -50,7 +50,7 @@ export interface CronRequestRow {
   schedule: string
   timezone: string | null
   message: string
-  status: "pending" | "approved" | "rejected"
+  status: 'pending' | 'approved' | 'rejected'
   requested_at: Date
   reviewed_at: Date | null
   reviewed_by: string | null

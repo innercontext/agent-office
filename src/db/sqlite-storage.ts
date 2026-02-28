@@ -1,7 +1,7 @@
-import Database from "better-sqlite3"
-import { randomUUID } from "crypto"
-import { AgentOfficeStorageBase } from "./storage-base.js"
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from "./types.js"
+import Database from 'better-sqlite3'
+import { randomUUID } from 'crypto'
+import { AgentOfficeStorageBase } from './storage-base.js'
+import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
 
 export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   constructor(private db: Database.Database) {
@@ -12,11 +12,11 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     this.db.close()
   }
 
-  async begin<T>(callback: (tx: import("./storage.js").AgentOfficeStorage) => Promise<T>): Promise<T> {
+  async begin<T>(callback: (tx: import('./storage.js').AgentOfficeStorage) => Promise<T>): Promise<T> {
     const transaction = this.db.transaction((cb: () => Promise<T>) => {
       return cb()
     })
-    
+
     const txStorage = new AgentOfficeSqliteStorage(this.db)
     return transaction(() => callback(txStorage)) as Promise<T>
   }
@@ -166,35 +166,38 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   }
 
   // Messages
-  async listMessagesForRecipient(name: string, filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }): Promise<MessageRow[]> {
-    let whereClauses: string[] = [`to_name = ?`];
-    let params: any[] = [name];
+  async listMessagesForRecipient(
+    name: string,
+    filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }
+  ): Promise<MessageRow[]> {
+    let whereClauses: string[] = [`to_name = ?`]
+    let params: any[] = [name]
     if (filters?.unread) {
-      whereClauses.push(`read = 0`);
+      whereClauses.push(`read = 0`)
     }
     if (filters?.notified === false) {
-      whereClauses.push(`notified != 1`);
+      whereClauses.push(`notified != 1`)
     }
     if (filters?.olderThanHours !== undefined) {
-      const hours = filters.olderThanHours;
-      whereClauses.push(`created_at < datetime('now', '-${hours} hours')`);
+      const hours = filters.olderThanHours
+      whereClauses.push(`created_at < datetime('now', '-${hours} hours')`)
     }
-    const where = whereClauses.join(' AND ');
+    const where = whereClauses.join(' AND ')
     const sql = `SELECT id, from_name, to_name, body, read, injected, created_at, notified
                  FROM messages
                  WHERE ${where}
-                 ORDER BY created_at DESC`;
-    const stmt = this.db.prepare(sql);
+                 ORDER BY created_at DESC`
+    const stmt = this.db.prepare(sql)
     const rows = stmt.all(...params) as Array<{
-      id: number;
-      from_name: string;
-      to_name: string;
-      body: string;
-      read: number;
-      injected: number;
-      notified: number;
-      created_at: string;
-    }>;
+      id: number
+      from_name: string
+      to_name: string
+      body: string
+      read: number
+      injected: number
+      notified: number
+      created_at: string
+    }>
     return rows.map(row => ({
       ...row,
       read: !!row.read,
@@ -290,10 +293,10 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   }
 
   async markMessagesAsNotified(ids: number[]): Promise<void> {
-    if (ids.length === 0) return;
-    const placeholders = ids.map(() => '?').join(',');
-    const stmt = this.db.prepare(`UPDATE messages SET notified = 1 WHERE id IN (${placeholders})`);
-    stmt.run(...ids);
+    if (ids.length === 0) return
+    const placeholders = ids.map(() => '?').join(',')
+    const stmt = this.db.prepare(`UPDATE messages SET notified = 1 WHERE id IN (${placeholders})`)
+    stmt.run(...ids)
   }
 
   // Cron Jobs
@@ -379,7 +382,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     sessionName: string,
     schedule: string,
     timezone: string | null,
-    message: string,
+    message: string
   ): Promise<CronJobRow> {
     const stmt = this.db.prepare(`
       INSERT INTO cron_jobs (name, session_name, schedule, timezone, message)
@@ -442,12 +445,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }))
   }
 
-  async createCronHistory(
-    cronJobId: number,
-    executedAt: Date,
-    success: boolean,
-    errorMessage?: string,
-  ): Promise<void> {
+  async createCronHistory(cronJobId: number, executedAt: Date, success: boolean, errorMessage?: string): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO cron_history (cron_job_id, executed_at, success, error_message)
       VALUES (?, ?, ?, ?)
@@ -483,7 +481,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       schedule: string
       timezone: string | null
       message: string
-      status: "pending" | "approved" | "rejected"
+      status: 'pending' | 'approved' | 'rejected'
       requested_at: string
       reviewed_at: string | null
       reviewed_by: string | null
@@ -515,7 +513,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     sessionName: string,
     schedule: string,
     timezone: string | null,
-    message: string,
+    message: string
   ): Promise<CronRequestRow> {
     const stmt = this.db.prepare(`
       INSERT INTO cron_requests (name, session_name, schedule, timezone, message)
@@ -532,9 +530,9 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 
   async updateCronRequestStatus(
     id: number,
-    status: "approved" | "rejected",
+    status: 'approved' | 'rejected',
     reviewedBy: string,
-    reviewerNotes?: string,
+    reviewerNotes?: string
   ): Promise<CronRequestRow | null> {
     const stmt = this.db.prepare(`
       UPDATE cron_requests
@@ -604,7 +602,13 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }
   }
 
-  async createTask(title: string, description: string, assignee: string | null, column: string, dependencies: number[]): Promise<TaskRow> {
+  async createTask(
+    title: string,
+    description: string,
+    assignee: string | null,
+    column: string,
+    dependencies: number[]
+  ): Promise<TaskRow> {
     const now = new Date().toISOString()
     const stmt = this.db.prepare(`
       INSERT INTO tasks (title, description, assignee, column_name, dependencies, created_at, updated_at)
@@ -624,7 +628,10 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }
   }
 
-  async updateTask(id: number, updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>): Promise<TaskRow | null> {
+  async updateTask(
+    id: number,
+    updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>
+  ): Promise<TaskRow | null> {
     const setParts: string[] = []
     const values: any[] = []
     if (updates.title !== undefined) {
@@ -719,7 +726,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     const MIGRATIONS = [
       {
         version: 1,
-        name: "create_sessions",
+        name: 'create_sessions',
         sql: `
           CREATE TABLE IF NOT EXISTS sessions (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -732,7 +739,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 2,
-        name: "add_agent_code",
+        name: 'add_agent_code',
         sql: `
           ALTER TABLE sessions ADD COLUMN agent_code TEXT NOT NULL DEFAULT '';
           CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_agent_code ON sessions(agent_code);
@@ -742,7 +749,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 3,
-        name: "create_config_table",
+        name: 'create_config_table',
         sql: `
           CREATE TABLE IF NOT EXISTS config (
             key   TEXT PRIMARY KEY,
@@ -754,7 +761,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 4,
-        name: "create_messages_table",
+        name: 'create_messages_table',
         sql: `
           CREATE TABLE IF NOT EXISTS messages (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -772,14 +779,14 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 5,
-        name: "add_mode_to_sessions",
+        name: 'add_mode_to_sessions',
         sql: `
           ALTER TABLE sessions ADD COLUMN mode TEXT NULL;
         `,
       },
       {
         version: 6,
-        name: "create_cron_tables",
+        name: 'create_cron_tables',
         sql: `
           CREATE TABLE IF NOT EXISTS cron_jobs (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -808,14 +815,14 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 7,
-        name: "add_status_to_sessions",
+        name: 'add_status_to_sessions',
         sql: `
           ALTER TABLE sessions ADD COLUMN status TEXT NULL;
         `,
       },
       {
         version: 8,
-        name: "rename_mode_to_agent",
+        name: 'rename_mode_to_agent',
         sql: `
           -- SQLite doesn't support RENAME COLUMN directly in older versions
           -- Create new table with correct schema
@@ -838,14 +845,14 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 9,
-        name: "add_notified_to_messages",
+        name: 'add_notified_to_messages',
         sql: `
           ALTER TABLE messages ADD COLUMN notified INTEGER NOT NULL DEFAULT 0;
         `,
       },
       {
         version: 10,
-        name: "create_tasks_table",
+        name: 'create_tasks_table',
         sql: `
           CREATE TABLE IF NOT EXISTS tasks (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -863,7 +870,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       },
       {
         version: 11,
-        name: "create_cron_requests_table",
+        name: 'create_cron_requests_table',
         sql: `
           CREATE TABLE IF NOT EXISTS cron_requests (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -895,13 +902,13 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 
     const appliedStmt = this.db.prepare(`SELECT version FROM _migrations ORDER BY version`)
     const applied = appliedStmt.all() as { version: number }[]
-    const appliedVersions = new Set(applied.map((r) => r.version))
+    const appliedVersions = new Set(applied.map(r => r.version))
 
     for (const migration of MIGRATIONS) {
       if (appliedVersions.has(migration.version)) continue
 
       console.log(`  Applying migration ${migration.version}: ${migration.name}`)
-      
+
       // Run migration in a transaction
       const migrate = this.db.transaction(() => {
         this.db.exec(migration.sql)
@@ -918,6 +925,6 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 export function createSqliteStorage(databasePath: string): AgentOfficeSqliteStorage {
   const db = new Database(databasePath)
   // Enable foreign keys
-  db.exec("PRAGMA foreign_keys = ON")
+  db.exec('PRAGMA foreign_keys = ON')
   return new AgentOfficeSqliteStorage(db)
 }

@@ -1,4 +1,4 @@
-import { AgentOfficeStorage, SessionRow } from "../db/index.js"
+import { AgentOfficeStorage, SessionRow } from '../db/index.js'
 
 export interface CoworkerInfo {
   name: string
@@ -12,7 +12,7 @@ export class SessionService {
 
   async listCoworkers(): Promise<CoworkerInfo[]> {
     const sessions = await this.storage.listSessions()
-    return sessions.map((session) => ({
+    return sessions.map(session => ({
       name: session.name,
       agent: session.agent,
       status: session.status,

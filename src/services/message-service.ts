@@ -1,4 +1,4 @@
-import { AgentOfficeStorage, MessageRow } from "../db/index.js"
+import { AgentOfficeStorage, MessageRow } from '../db/index.js'
 
 export interface MessageInfo {
   id: number
@@ -47,12 +47,12 @@ export class MessageService {
 
   async getUnreadMail(coworkerName: string): Promise<MessageRow[]> {
     const unreadMessages = await this.storage.listMessagesForRecipient(coworkerName, { unread: true })
-    
+
     // Mark all as read
     for (const message of unreadMessages) {
       await this.storage.markMessageAsRead(message.id)
     }
-    
+
     return unreadMessages
   }
 }

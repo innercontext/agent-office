@@ -1,5 +1,5 @@
-import { parseCronExpression } from "cron-schedule"
-import { AgentOfficeStorage, CronJobRow, CronRequestRow, CronHistoryRow } from "../db/index.js"
+import { parseCronExpression } from 'cron-schedule'
+import { AgentOfficeStorage, CronJobRow, CronRequestRow, CronHistoryRow } from '../db/index.js'
 
 export interface CronJobInfo {
   id: number
@@ -20,7 +20,7 @@ export interface CronRequestInfo {
   schedule: string
   timezone: string | null
   message: string
-  status: "pending" | "approved" | "rejected"
+  status: 'pending' | 'approved' | 'rejected'
   requested_at: Date
 }
 
@@ -29,7 +29,7 @@ export class CronService {
 
   async listCronJobs(): Promise<CronJobInfo[]> {
     const jobs = await this.storage.listCronJobs()
-    return jobs.map((job) => ({
+    return jobs.map(job => ({
       id: job.id,
       name: job.name,
       session_name: job.session_name,
@@ -42,9 +42,9 @@ export class CronService {
     }))
   }
 
-  async listCronJobsForSession(sessionName: string): Promise<CronJobInfo[]> {
-    const jobs = await this.storage.listCronJobsForSession(sessionName)
-    return jobs.map((job) => ({
+  async listCronJobsForSession(coworkerName: string): Promise<CronJobInfo[]> {
+    const jobs = await this.storage.listCronJobsForSession(coworkerName)
+    return jobs.map(job => ({
       id: job.id,
       name: job.name,
       session_name: job.session_name,
@@ -63,24 +63,24 @@ export class CronService {
 
   async createCronJob(
     name: string,
-    sessionName: string,
+    coworkerName: string,
     schedule: string,
     timezone: string | null,
     message: string
   ): Promise<CronJobRow> {
-    // Verify session exists
-    const session = await this.storage.getSessionByName(sessionName)
-    if (!session) {
-      throw new Error(`Session ${sessionName} not found`)
+    // Verify coworker exists
+    const coworker = await this.storage.getSessionByName(coworkerName)
+    if (!coworker) {
+      throw new Error(`Coworker ${coworkerName} not found`)
     }
 
     // Check if cron job already exists
-    const exists = await this.storage.cronJobExistsForSession(name, sessionName)
+    const exists = await this.storage.cronJobExistsForSession(name, coworkerName)
     if (exists) {
-      throw new Error(`Cron job ${name} already exists for session ${sessionName}`)
+      throw new Error(`Cron job ${name} already exists for coworker ${coworkerName}`)
     }
 
-    return this.storage.createCronJob(name, sessionName, schedule, timezone, message)
+    return this.storage.createCronJob(name, coworkerName, schedule, timezone, message)
   }
 
   async deleteCronJob(id: number): Promise<void> {
@@ -111,9 +111,11 @@ export class CronService {
     return this.storage.listCronHistory(cronJobId, limit)
   }
 
-  async listCronRequests(filters?: { status?: string; sessionName?: string }): Promise<CronRequestInfo[]> {
-    const requests = await this.storage.listCronRequests(filters)
-    return requests.map((request) => ({
+  async listCronRequests(filters?: { status?: string; coworkerName?: string }): Promise<CronRequestInfo[]> {
+    // Map coworkerName filter to sessionName for storage layer
+    const storageFilters = filters?.coworkerName ? { ...filters, sessionName: filters.coworkerName } : filters
+    const requests = await this.storage.listCronRequests(storageFilters)
+    return requests.map(request => ({
       id: request.id,
       name: request.name,
       session_name: request.session_name,
@@ -127,18 +129,60 @@ export class CronService {
 
   async createCronRequest(
     name: string,
-    sessionName: string,
+    coworkerName: string,
     schedule: string,
     timezone: string | null,
     message: string
   ): Promise<CronRequestRow> {
-    // Verify session exists
-    const session = await this.storage.getSessionByName(sessionName)
-    if (!session) {
-      throw new Error(`Session ${sessionName} not found`)
+    // Verify coworker exists
+    const coworker = await this.storage.getSessionByName(coworkerName)
+    if (!coworker) {
+      throw new Error(`Coworker ${coworkerName} not found`)
     }
 
-    return this.storage.createCronRequest(name, sessionName, schedule, timezone, message)
+    return this.storage.createCronRequest(name, coworkerName, schedule, timezone, message)
+  }
+
+  async getCronRequestById(id: number): Promise<CronRequestRow | null> {
+    return this.storage.getCronRequestById(id)
+  }
+
+  async approveCronRequest(id: number, reviewedBy: string, reviewerNotes?: string): Promise<CronRequestRow> {
+    const request = await this.storage.getCronRequestById(id)
+    if (!request) {
+      throw new Error(`Cron request ${id} not found`)
+    }
+    if (request.status !== 'pending') {
+      throw new Error(`Cannot approve cron request ${id}: status is ${request.status}, expected pending`)
+    }
+    const updated = await this.storage.updateCronRequestStatus(id, 'approved', reviewedBy, reviewerNotes)
+    if (!updated) {
+      throw new Error(`Failed to approve cron request ${id}`)
+    }
+    return updated
+  }
+
+  async rejectCronRequest(id: number, reviewedBy: string, reviewerNotes?: string): Promise<CronRequestRow> {
+    const request = await this.storage.getCronRequestById(id)
+    if (!request) {
+      throw new Error(`Cron request ${id} not found`)
+    }
+    if (request.status !== 'pending') {
+      throw new Error(`Cannot reject cron request ${id}: status is ${request.status}, expected pending`)
+    }
+    const updated = await this.storage.updateCronRequestStatus(id, 'rejected', reviewedBy, reviewerNotes)
+    if (!updated) {
+      throw new Error(`Failed to reject cron request ${id}`)
+    }
+    return updated
+  }
+
+  async deleteCronRequest(id: number): Promise<void> {
+    const request = await this.storage.getCronRequestById(id)
+    if (!request) {
+      throw new Error(`Cron request ${id} not found`)
+    }
+    await this.storage.deleteCronRequest(id)
   }
 
   async checkCronJob(cronJobId: number, referenceDate: Date = new Date()): Promise<boolean> {
@@ -153,12 +197,12 @@ export class CronService {
 
     try {
       const cron = parseCronExpression(job.schedule)
-      
+
       // Check if the schedule matches the current minute
       // We truncate seconds to match by minute
       const checkDate = new Date(referenceDate)
       checkDate.setSeconds(0, 0)
-      
+
       return cron.matchDate(checkDate)
     } catch (error) {
       throw new Error(`Invalid cron schedule "${job.schedule}": ${error}`)

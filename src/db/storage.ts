@@ -1,4 +1,4 @@
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from "./types.js"
+import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
 
 export type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow }
 
@@ -43,7 +43,10 @@ export interface AgentOfficeStorage {
   setConfig(key: string, value: string): Promise<void>
 
   // Messages
-  listMessagesForRecipient(name: string, filters?: {unread?: boolean, olderThanHours?: number, notified?: boolean}): Promise<MessageRow[]>
+  listMessagesForRecipient(
+    name: string,
+    filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }
+  ): Promise<MessageRow[]>
   listMessagesFromSender(name: string): Promise<MessageRow[]>
   countUnreadBySender(recipientName: string): Promise<Map<string, number>>
   lastMessageAtByCoworker(humanName: string): Promise<Map<string, Date>>
@@ -62,7 +65,7 @@ export interface AgentOfficeStorage {
     sessionName: string,
     schedule: string,
     timezone: string | null,
-    message: string,
+    message: string
   ): Promise<CronJobRow>
   deleteCronJob(id: number): Promise<void>
   enableCronJob(id: number): Promise<void>
@@ -77,15 +80,35 @@ export interface AgentOfficeStorage {
   // Cron Requests
   listCronRequests(filters?: { status?: string; sessionName?: string }): Promise<CronRequestRow[]>
   getCronRequestById(id: number): Promise<CronRequestRow | null>
-  createCronRequest(name: string, sessionName: string, schedule: string, timezone: string | null, message: string): Promise<CronRequestRow>
-  updateCronRequestStatus(id: number, status: "approved" | "rejected", reviewedBy: string, reviewerNotes?: string): Promise<CronRequestRow | null>
+  createCronRequest(
+    name: string,
+    sessionName: string,
+    schedule: string,
+    timezone: string | null,
+    message: string
+  ): Promise<CronRequestRow>
+  updateCronRequestStatus(
+    id: number,
+    status: 'approved' | 'rejected',
+    reviewedBy: string,
+    reviewerNotes?: string
+  ): Promise<CronRequestRow | null>
   deleteCronRequest(id: number): Promise<void>
 
   // Tasks
   listTasks(): Promise<TaskRow[]>
   getTaskById(id: number): Promise<TaskRow | null>
-  createTask(title: string, description: string, assignee: string | null, column: string, dependencies: number[]): Promise<TaskRow>
-  updateTask(id: number, updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>): Promise<TaskRow | null>
+  createTask(
+    title: string,
+    description: string,
+    assignee: string | null,
+    column: string,
+    dependencies: number[]
+  ): Promise<TaskRow>
+  updateTask(
+    id: number,
+    updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>
+  ): Promise<TaskRow | null>
   deleteTask(id: number): Promise<void>
   searchTasks(query: string, filters?: { assignee?: string; column?: string }): Promise<TaskRow[]>
 

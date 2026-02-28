@@ -10,7 +10,7 @@ import {
   CronHistoryRow,
   CronRequestRow,
   TaskRow,
-} from "./storage.js"
+} from './storage.js'
 
 export type { WatchListener, WatchState, SenderInfo }
 
@@ -73,11 +73,11 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async getSessionByName(name: string): Promise<SessionRow | null> {
-    return this.sessions.find((s) => s.name === name) ?? null
+    return this.sessions.find(s => s.name === name) ?? null
   }
 
   async getSessionIdByName(name: string): Promise<number | null> {
-    const session = this.sessions.find((s) => s.name === name)
+    const session = this.sessions.find(s => s.name === name)
     return session?.id ?? null
   }
 
@@ -95,14 +95,14 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async deleteSession(id: number): Promise<void> {
-    const index = this.sessions.findIndex((s) => s.id === id)
+    const index = this.sessions.findIndex(s => s.id === id)
     if (index !== -1) {
       this.sessions.splice(index, 1)
     }
   }
 
   async updateSessionAgent(name: string, agent: string): Promise<SessionRow> {
-    const session = this.sessions.find((s) => s.name === name)
+    const session = this.sessions.find(s => s.name === name)
     if (!session) {
       throw new Error(`Session ${name} not found`)
     }
@@ -111,7 +111,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async updateSessionStatus(name: string, status: string | null): Promise<void> {
-    const session = this.sessions.find((s) => s.name === name)
+    const session = this.sessions.find(s => s.name === name)
     if (!session) {
       throw new Error(`Session ${name} not found`)
     }
@@ -119,7 +119,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async updateSessionId(name: string, sessionId: string): Promise<void> {
-    const session = this.sessions.find((s) => s.name === name)
+    const session = this.sessions.find(s => s.name === name)
     if (!session) {
       throw new Error(`Session ${name} not found`)
     }
@@ -127,7 +127,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async sessionExists(name: string): Promise<boolean> {
-    return this.sessions.some((s) => s.name === name)
+    return this.sessions.some(s => s.name === name)
   }
 
   // Config
@@ -136,12 +136,12 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async getConfig(key: string): Promise<string | null> {
-    const config = this.configs.find((c) => c.key === key)
+    const config = this.configs.find(c => c.key === key)
     return config?.value ?? null
   }
 
   async setConfig(key: string, value: string): Promise<void> {
-    const index = this.configs.findIndex((c) => c.key === key)
+    const index = this.configs.findIndex(c => c.key === key)
     if (index !== -1) {
       this.configs[index].value = value
     } else {
@@ -154,34 +154,32 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     name: string,
     filters?: { unread?: boolean; olderThanHours?: number; notified?: boolean }
   ): Promise<MessageRow[]> {
-    let messages = this.messages.filter((m) => m.to_name === name)
+    let messages = this.messages.filter(m => m.to_name === name)
 
     if (filters?.unread) {
-      messages = messages.filter((m) => !m.read)
+      messages = messages.filter(m => !m.read)
     }
     if (filters?.notified === false) {
-      messages = messages.filter((m) => !m.notified)
+      messages = messages.filter(m => !m.notified)
     }
     if (filters?.olderThanHours !== undefined) {
       const cutoff = new Date(Date.now() - filters.olderThanHours * 60 * 60 * 1000)
-      messages = messages.filter((m) => m.created_at < cutoff)
+      messages = messages.filter(m => m.created_at < cutoff)
     }
 
-    return messages
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-      .map(m => ({ ...m }))
+    return messages.sort((a, b) => b.created_at.getTime() - a.created_at.getTime()).map(m => ({ ...m }))
   }
 
   async listMessagesFromSender(name: string): Promise<MessageRow[]> {
     return this.messages
-      .filter((m) => m.from_name === name)
+      .filter(m => m.from_name === name)
       .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
       .map(m => ({ ...m }))
   }
 
   async countUnreadBySender(recipientName: string): Promise<Map<string, number>> {
     const counts = new Map<string, number>()
-    const messages = this.messages.filter((m) => m.to_name === recipientName && !m.read)
+    const messages = this.messages.filter(m => m.to_name === recipientName && !m.read)
     for (const message of messages) {
       const count = counts.get(message.from_name) ?? 0
       counts.set(message.from_name, count + 1)
@@ -220,7 +218,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async markMessageAsRead(id: number): Promise<MessageRow | null> {
-    const message = this.messages.find((m) => m.id === id)
+    const message = this.messages.find(m => m.id === id)
     if (message) {
       message.read = true
     }
@@ -228,7 +226,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async markMessageAsInjected(id: number): Promise<void> {
-    const message = this.messages.find((m) => m.id === id)
+    const message = this.messages.find(m => m.id === id)
     if (message) {
       message.injected = true
     }
@@ -236,7 +234,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
 
   async markMessagesAsNotified(ids: number[]): Promise<void> {
     for (const id of ids) {
-      const message = this.messages.find((m) => m.id === id)
+      const message = this.messages.find(m => m.id === id)
       if (message) {
         message.notified = true
       }
@@ -249,17 +247,15 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async listCronJobsForSession(sessionName: string): Promise<CronJobRow[]> {
-    return this.cronJobs
-      .filter((c) => c.session_name === sessionName)
-      .sort((a, b) => a.name.localeCompare(b.name))
+    return this.cronJobs.filter(c => c.session_name === sessionName).sort((a, b) => a.name.localeCompare(b.name))
   }
 
   async getCronJobById(id: number): Promise<CronJobRow | null> {
-    return this.cronJobs.find((c) => c.id === id) ?? null
+    return this.cronJobs.find(c => c.id === id) ?? null
   }
 
   async getCronJobByNameAndSession(name: string, sessionName: string): Promise<CronJobRow | null> {
-    return this.cronJobs.find((c) => c.name === name && c.session_name === sessionName) ?? null
+    return this.cronJobs.find(c => c.name === name && c.session_name === sessionName) ?? null
   }
 
   async createCronJob(
@@ -285,51 +281,46 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async deleteCronJob(id: number): Promise<void> {
-    const index = this.cronJobs.findIndex((c) => c.id === id)
+    const index = this.cronJobs.findIndex(c => c.id === id)
     if (index !== -1) {
       this.cronJobs.splice(index, 1)
     }
   }
 
   async enableCronJob(id: number): Promise<void> {
-    const cronJob = this.cronJobs.find((c) => c.id === id)
+    const cronJob = this.cronJobs.find(c => c.id === id)
     if (cronJob) {
       cronJob.enabled = true
     }
   }
 
   async disableCronJob(id: number): Promise<void> {
-    const cronJob = this.cronJobs.find((c) => c.id === id)
+    const cronJob = this.cronJobs.find(c => c.id === id)
     if (cronJob) {
       cronJob.enabled = false
     }
   }
 
   async updateCronJobLastRun(id: number, lastRun: Date): Promise<void> {
-    const cronJob = this.cronJobs.find((c) => c.id === id)
+    const cronJob = this.cronJobs.find(c => c.id === id)
     if (cronJob) {
       cronJob.last_run = lastRun
     }
   }
 
   async cronJobExistsForSession(name: string, sessionName: string): Promise<boolean> {
-    return this.cronJobs.some((c) => c.name === name && c.session_name === sessionName)
+    return this.cronJobs.some(c => c.name === name && c.session_name === sessionName)
   }
 
   // Cron History
   async listCronHistory(cronJobId: number, limit: number): Promise<CronHistoryRow[]> {
     return this.cronHistory
-      .filter((h) => h.cron_job_id === cronJobId)
+      .filter(h => h.cron_job_id === cronJobId)
       .sort((a, b) => b.executed_at.getTime() - a.executed_at.getTime())
       .slice(0, limit)
   }
 
-  async createCronHistory(
-    cronJobId: number,
-    executedAt: Date,
-    success: boolean,
-    errorMessage?: string
-  ): Promise<void> {
+  async createCronHistory(cronJobId: number, executedAt: Date, success: boolean, errorMessage?: string): Promise<void> {
     const history: CronHistoryRow = {
       id: this.cronHistoryIdCounter++,
       cron_job_id: cronJobId,
@@ -345,17 +336,17 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     let requests = [...this.cronRequests]
 
     if (filters?.status) {
-      requests = requests.filter((r) => r.status === filters.status)
+      requests = requests.filter(r => r.status === filters.status)
     }
     if (filters?.sessionName) {
-      requests = requests.filter((r) => r.session_name === filters.sessionName)
+      requests = requests.filter(r => r.session_name === filters.sessionName)
     }
 
     return requests.sort((a, b) => b.requested_at.getTime() - a.requested_at.getTime())
   }
 
   async getCronRequestById(id: number): Promise<CronRequestRow | null> {
-    return this.cronRequests.find((r) => r.id === id) ?? null
+    return this.cronRequests.find(r => r.id === id) ?? null
   }
 
   async createCronRequest(
@@ -372,7 +363,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
       schedule,
       timezone,
       message,
-      status: "pending",
+      status: 'pending',
       requested_at: new Date(),
       reviewed_at: null,
       reviewed_by: null,
@@ -384,11 +375,11 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
 
   async updateCronRequestStatus(
     id: number,
-    status: "approved" | "rejected",
+    status: 'approved' | 'rejected',
     reviewedBy: string,
     reviewerNotes?: string
   ): Promise<CronRequestRow | null> {
-    const request = this.cronRequests.find((r) => r.id === id)
+    const request = this.cronRequests.find(r => r.id === id)
     if (request) {
       request.status = status
       request.reviewed_at = new Date()
@@ -399,7 +390,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async deleteCronRequest(id: number): Promise<void> {
-    const index = this.cronRequests.findIndex((r) => r.id === id)
+    const index = this.cronRequests.findIndex(r => r.id === id)
     if (index !== -1) {
       this.cronRequests.splice(index, 1)
     }
@@ -411,7 +402,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async getTaskById(id: number): Promise<TaskRow | null> {
-    return this.tasks.find((t) => t.id === id) ?? null
+    return this.tasks.find(t => t.id === id) ?? null
   }
 
   async createTask(
@@ -438,9 +429,9 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
 
   async updateTask(
     id: number,
-    updates: Partial<Pick<TaskRow, "title" | "description" | "assignee" | "column" | "dependencies">>
+    updates: Partial<Pick<TaskRow, 'title' | 'description' | 'assignee' | 'column' | 'dependencies'>>
   ): Promise<TaskRow | null> {
-    const task = this.tasks.find((t) => t.id === id)
+    const task = this.tasks.find(t => t.id === id)
     if (task) {
       if (updates.title !== undefined) task.title = updates.title
       if (updates.description !== undefined) task.description = updates.description
@@ -453,22 +444,20 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   }
 
   async deleteTask(id: number): Promise<void> {
-    const index = this.tasks.findIndex((t) => t.id === id)
+    const index = this.tasks.findIndex(t => t.id === id)
     if (index !== -1) {
       this.tasks.splice(index, 1)
     }
   }
 
   async searchTasks(query: string, filters?: { assignee?: string; column?: string }): Promise<TaskRow[]> {
-    let tasks = this.tasks.filter(
-      (t) => t.title.includes(query) || t.description.includes(query)
-    )
+    let tasks = this.tasks.filter(t => t.title.includes(query) || t.description.includes(query))
 
     if (filters?.assignee) {
-      tasks = tasks.filter((t) => t.assignee === filters.assignee)
+      tasks = tasks.filter(t => t.assignee === filters.assignee)
     }
     if (filters?.column) {
-      tasks = tasks.filter((t) => t.column === filters.column)
+      tasks = tasks.filter(t => t.column === filters.column)
     }
 
     return tasks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
