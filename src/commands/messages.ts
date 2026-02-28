@@ -20,8 +20,23 @@ export async function checkUnreadMail(
   useJson: boolean
 ): Promise<void> {
   const service = new MessageService(storage)
-  const hasUnread = await service.checkUnreadMail(coworkerName)
-  console.log(formatOutput({ hasUnread }, useJson))
+  const unreadCounts = await service.countUnreadBySender(coworkerName)
+
+  // Convert Map to object for JSON serialization
+  const counts: Record<string, number> = {}
+  let totalUnread = 0
+  for (const [sender, count] of unreadCounts) {
+    if (count > 0) {
+      counts[sender] = count
+      totalUnread += count
+    }
+  }
+
+  if (totalUnread === 0) {
+    throw new Error(`No unread messages for ${coworkerName}`)
+  }
+
+  console.log(formatOutput(counts, useJson))
 }
 
 export async function getUnreadMail(
