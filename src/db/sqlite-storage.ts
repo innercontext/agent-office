@@ -22,12 +22,18 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   }
 
   async begin<T>(callback: (tx: import('./storage.js').AgentOfficeStorage) => Promise<T>): Promise<T> {
-    const transaction = this.db.transaction((cb: () => Promise<T>) => {
-      return cb()
-    })
-
+    // Manual transaction handling for async support
+    this.db.exec('BEGIN')
     const txStorage = new AgentOfficeSqliteStorage(this.db)
-    return transaction(() => callback(txStorage)) as Promise<T>
+
+    try {
+      const result = await callback(txStorage)
+      this.db.exec('COMMIT')
+      return result
+    } catch (error) {
+      this.db.exec('ROLLBACK')
+      throw error
+    }
   }
 
   // Sessions
