@@ -90,12 +90,11 @@ program
   .command('create-coworker')
   .description('Create a new coworker (session)')
   .requiredOption('-n, --name <name>', 'Coworker name')
-  .requiredOption('-i, --id <id>', 'Coworker ID')
-  .requiredOption('-a, --agent <agent>', 'Agent name')
+  .requiredOption('-t, --type <type>', 'Coworker type (e.g., assistant, developer, manager)')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    await createSession(storage, options.name, options.id, options.agent, useJson)
+    await createSession(storage, options.name, options.type, useJson)
     await storage.close()
   })
 
@@ -114,7 +113,7 @@ program
   .command('update-coworker')
   .description("Update a coworker's information (status, description, philosophy, visual description)")
   .requiredOption('-n, --name <name>', 'Coworker name')
-  .option('-a, --agent <agent>', 'Set the agent name')
+  .option('-t, --type <type>', 'Set the coworker type')
   .option('-s, --status <status>', 'Set the status (omit to clear)')
   .option('-d, --description <description>', 'Set the description (omit to clear)')
   .option('-p, --philosophy <philosophy>', 'Set the philosophy (omit to clear)')
@@ -126,7 +125,7 @@ program
       storage,
       options.name,
       {
-        agent: options.agent ?? null,
+        type: options.type ?? null,
         status: options.status ?? null,
         description: options.description ?? null,
         philosophy: options.philosophy ?? null,

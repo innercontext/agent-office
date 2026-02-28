@@ -18,7 +18,7 @@ export async function updateCoworker(
   storage: AgentOfficeStorage,
   name: string,
   updates: {
-    agent?: string | null
+    type?: string | null
     status?: string | null
     description?: string | null
     philosophy?: string | null
@@ -28,7 +28,7 @@ export async function updateCoworker(
 ): Promise<void> {
   const service = new SessionService(storage)
   const session = await service.updateCoworker(name, {
-    ...(updates.agent !== undefined && updates.agent !== null ? { agent: updates.agent } : {}),
+    ...(updates.type !== undefined && updates.type !== null ? { agent: updates.type } : {}),
     status: updates.status,
     description: updates.description,
     philosophy: updates.philosophy,
@@ -40,12 +40,11 @@ export async function updateCoworker(
 export async function createSession(
   storage: AgentOfficeStorage,
   name: string,
-  sessionId: string,
-  agent: string,
+  type: string,
   useJson: boolean
 ): Promise<void> {
   const service = new SessionService(storage)
-  const session = await service.createSession(name, sessionId, agent)
+  const session = await service.createSession(name, name, type)
   console.log(formatOutput(session, useJson))
 }
 

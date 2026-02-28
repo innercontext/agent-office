@@ -28,12 +28,12 @@ describe('SessionService', () => {
       expect(coworkers[1].name).toBe('session1')
     })
 
-    it('should include agent and status info', async () => {
+    it('should include type and status info', async () => {
       await storage.createSession('session1', 'id1', 'agent1')
       await storage.updateSession('session1', { status: 'busy' })
 
       const coworkers = await service.listCoworkers()
-      expect(coworkers[0].agent).toBe('agent1')
+      expect(coworkers[0].type).toBe('agent1')
       expect(coworkers[0].status).toBe('busy')
     })
   })
