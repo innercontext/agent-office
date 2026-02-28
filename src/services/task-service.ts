@@ -23,7 +23,12 @@ export class TaskService {
       throw new Error(`Invalid column "${column}". Valid columns: ${validColumns.join(', ')}`)
     }
 
-    return this.storage.createTask(title, description, assignee, column, dependencies)
+    const task = await this.storage.createTask(title, description, assignee, column, dependencies)
+
+    // Record initial placement in history
+    await this.storage.createTaskHistory(task.id, null, column)
+
+    return task
   }
 
   async listTasks(): Promise<TaskRow[]> {
@@ -93,7 +98,17 @@ export class TaskService {
       throw new Error(`Task ${id} is already in column "${newColumn}"`)
     }
 
-    return this.updateTask(id, { column: newColumn })
+    const oldColumn = task.column
+    const updated = await this.updateTask(id, { column: newColumn })
+
+    // Record the move in history
+    await this.storage.createTaskHistory(id, oldColumn, newColumn)
+
+    return updated
+  }
+
+  async getTaskHistory(id: number) {
+    return this.storage.listTaskHistory(id)
   }
 
   async getColumnStats(): Promise<ColumnStats[]> {

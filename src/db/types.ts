@@ -70,3 +70,11 @@ export interface TaskRow {
   created_at: Date
   updated_at: Date
 }
+
+export interface TaskHistoryRow {
+  id: number
+  task_id: number
+  from_column: string | null
+  to_column: string
+  moved_at: Date
+}

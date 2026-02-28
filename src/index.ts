@@ -33,6 +33,7 @@ import {
   unassignTask,
   moveTask,
   taskStats,
+  getTaskHistory,
 } from './commands/tasks.js'
 import { listTaskColumns } from './commands/task-columns.js'
 import { createSqliteStorage, createPostgresqlStorage, AgentOfficeStorage } from './db/index.js'
@@ -478,6 +479,17 @@ program
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
     await taskStats(storage, useJson)
+    await storage.close()
+  })
+
+program
+  .command('task-history')
+  .description('Show column transition history for a task with durations')
+  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await getTaskHistory(storage, options.id, useJson)
     await storage.close()
   })
 

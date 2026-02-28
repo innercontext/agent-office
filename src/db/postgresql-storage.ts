@@ -1,6 +1,15 @@
 import postgres from 'postgres'
 import { AgentOfficeStorageBase } from './storage-base.js'
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
+import type {
+  SessionRow,
+  ConfigRow,
+  MessageRow,
+  CronJobRow,
+  CronHistoryRow,
+  CronRequestRow,
+  TaskRow,
+  TaskHistoryRow,
+} from './types.js'
 
 export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   constructor(private sql: ReturnType<typeof postgres>) {
@@ -504,6 +513,22 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     return this.sql.unsafe(sql, params)
   }
 
+  async listTaskHistory(taskId: number): Promise<TaskHistoryRow[]> {
+    return this.sql`
+      SELECT id, task_id, from_column, to_column, moved_at
+      FROM task_history
+      WHERE task_id = ${taskId}
+      ORDER BY moved_at ASC
+    `
+  }
+
+  async createTaskHistory(taskId: number, fromColumn: string | null, toColumn: string): Promise<void> {
+    await this.sql`
+      INSERT INTO task_history (task_id, from_column, to_column, moved_at)
+      VALUES (${taskId}, ${fromColumn}, ${toColumn}, NOW())
+    `
+  }
+
   async runMigrations(): Promise<void> {
     const MIGRATIONS = [
       {
@@ -660,6 +685,20 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
           ALTER TABLE sessions ADD COLUMN IF NOT EXISTS description TEXT;
           ALTER TABLE sessions ADD COLUMN IF NOT EXISTS philosophy TEXT;
           ALTER TABLE sessions ADD COLUMN IF NOT EXISTS visual_description TEXT;
+        `,
+      },
+      {
+        version: 13,
+        name: 'create_task_history_table',
+        sql: `
+          CREATE TABLE IF NOT EXISTS task_history (
+            id           SERIAL PRIMARY KEY,
+            task_id      INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            from_column  TEXT,
+            to_column    TEXT NOT NULL,
+            moved_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          CREATE INDEX IF NOT EXISTS idx_task_history_task_id ON task_history(task_id);
         `,
       },
     ]

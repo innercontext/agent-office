@@ -1,6 +1,15 @@
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
+import type {
+  SessionRow,
+  ConfigRow,
+  MessageRow,
+  CronJobRow,
+  CronHistoryRow,
+  CronRequestRow,
+  TaskRow,
+  TaskHistoryRow,
+} from './types.js'
 
-export type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow }
+export type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow, TaskHistoryRow }
 
 export interface SenderInfo {
   lastSent: string // ISO time string
@@ -113,6 +122,10 @@ export interface AgentOfficeStorage {
   ): Promise<TaskRow | null>
   deleteTask(id: number): Promise<void>
   searchTasks(query: string, filters?: { assignee?: string; column?: string }): Promise<TaskRow[]>
+
+  // Task History
+  listTaskHistory(taskId: number): Promise<TaskHistoryRow[]>
+  createTaskHistory(taskId: number, fromColumn: string | null, toColumn: string): Promise<void>
 
   // Migrations
   runMigrations(): Promise<void>

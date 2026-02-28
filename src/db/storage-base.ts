@@ -1,5 +1,14 @@
 import type { AgentOfficeStorage, WatchListener, WatchState, SenderInfo } from './storage.js'
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
+import type {
+  SessionRow,
+  ConfigRow,
+  MessageRow,
+  CronJobRow,
+  CronHistoryRow,
+  CronRequestRow,
+  TaskRow,
+  TaskHistoryRow,
+} from './types.js'
 
 export { WatchListener, WatchState, SenderInfo }
 
@@ -90,6 +99,11 @@ export abstract class AgentOfficeStorageBase implements AgentOfficeStorage {
   ): Promise<TaskRow | null>
   abstract deleteTask(id: number): Promise<void>
   abstract searchTasks(query: string, filters?: { assignee?: string; column?: string }): Promise<TaskRow[]>
+
+  // Task History - subclasses must implement
+  abstract listTaskHistory(taskId: number): Promise<TaskHistoryRow[]>
+  abstract createTaskHistory(taskId: number, fromColumn: string | null, toColumn: string): Promise<void>
+
   abstract runMigrations(): Promise<void>
 
   // createMessage needs special handling - subclasses must implement the DB logic

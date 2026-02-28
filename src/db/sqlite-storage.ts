@@ -1,7 +1,16 @@
 import Database from 'better-sqlite3'
 import { randomUUID } from 'crypto'
 import { AgentOfficeStorageBase } from './storage-base.js'
-import type { SessionRow, ConfigRow, MessageRow, CronJobRow, CronHistoryRow, CronRequestRow, TaskRow } from './types.js'
+import type {
+  SessionRow,
+  ConfigRow,
+  MessageRow,
+  CronJobRow,
+  CronHistoryRow,
+  CronRequestRow,
+  TaskRow,
+  TaskHistoryRow,
+} from './types.js'
 
 export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   constructor(private db: Database.Database) {
@@ -750,6 +759,37 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }))
   }
 
+  async listTaskHistory(taskId: number): Promise<TaskHistoryRow[]> {
+    const stmt = this.db.prepare(`
+      SELECT id, task_id, from_column, to_column, moved_at
+      FROM task_history
+      WHERE task_id = ?
+      ORDER BY moved_at ASC
+    `)
+    const rows = stmt.all(taskId) as Array<{
+      id: number
+      task_id: number
+      from_column: string | null
+      to_column: string
+      moved_at: string
+    }>
+    return rows.map(row => ({
+      id: row.id,
+      task_id: row.task_id,
+      from_column: row.from_column,
+      to_column: row.to_column,
+      moved_at: new Date(row.moved_at),
+    }))
+  }
+
+  async createTaskHistory(taskId: number, fromColumn: string | null, toColumn: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      INSERT INTO task_history (task_id, from_column, to_column, moved_at)
+      VALUES (?, ?, ?, ?)
+    `)
+    stmt.run(taskId, fromColumn, toColumn, new Date().toISOString())
+  }
+
   // Migrations
   async runMigrations(): Promise<void> {
     const MIGRATIONS = [
@@ -925,6 +965,20 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
           ALTER TABLE sessions ADD COLUMN description TEXT;
           ALTER TABLE sessions ADD COLUMN philosophy TEXT;
           ALTER TABLE sessions ADD COLUMN visual_description TEXT;
+        `,
+      },
+      {
+        version: 13,
+        name: 'create_task_history_table',
+        sql: `
+          CREATE TABLE IF NOT EXISTS task_history (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id      INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            from_column  TEXT,
+            to_column    TEXT NOT NULL,
+            moved_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE INDEX IF NOT EXISTS idx_task_history_task_id ON task_history(task_id);
         `,
       },
     ]

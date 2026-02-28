@@ -10,6 +10,7 @@ import {
   CronHistoryRow,
   CronRequestRow,
   TaskRow,
+  TaskHistoryRow,
 } from './storage.js'
 
 export type { WatchListener, WatchState, SenderInfo }
@@ -28,6 +29,8 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
   private cronRequestIdCounter = 1
   private tasks: TaskRow[] = []
   private taskIdCounter = 1
+  private taskHistory: TaskHistoryRow[] = []
+  private taskHistoryIdCounter = 1
   private listeners: Set<WatchListener> = new Set()
   private closed = false
 
@@ -459,6 +462,23 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     }
 
     return tasks.sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+  }
+
+  async listTaskHistory(taskId: number): Promise<TaskHistoryRow[]> {
+    return this.taskHistory
+      .filter(h => h.task_id === taskId)
+      .sort((a, b) => a.moved_at.getTime() - b.moved_at.getTime())
+  }
+
+  async createTaskHistory(taskId: number, fromColumn: string | null, toColumn: string): Promise<void> {
+    const entry: TaskHistoryRow = {
+      id: this.taskHistoryIdCounter++,
+      task_id: taskId,
+      from_column: fromColumn,
+      to_column: toColumn,
+      moved_at: new Date(),
+    }
+    this.taskHistory.push(entry)
   }
 
   // Migrations
