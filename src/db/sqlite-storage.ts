@@ -973,7 +973,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
           CREATE TABLE sessions_new (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
             name             TEXT UNIQUE NOT NULL,
-            type             TEXT,
+            coworkerType     TEXT,
             status           TEXT,
             description      TEXT,
             philosophy       TEXT,
@@ -982,7 +982,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
           );
           
           -- Copy data from old table
-          INSERT INTO sessions_new (id, name, type, status, description, philosophy, visual_description, created_at)
+          INSERT INTO sessions_new (id, name, coworkerType, status, description, philosophy, visual_description, created_at)
           SELECT id, name, agent, status, description, philosophy, visual_description, created_at FROM sessions;
           
           -- Drop old table

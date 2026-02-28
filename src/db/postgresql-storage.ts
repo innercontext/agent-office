@@ -691,8 +691,8 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
           ALTER TABLE sessions DROP COLUMN IF EXISTS session_id;
           ALTER TABLE sessions DROP COLUMN IF EXISTS agent_code;
           
-          -- Rename agent to type
-          ALTER TABLE sessions RENAME COLUMN agent TO type;
+          -- Rename agent to coworkerType
+          ALTER TABLE sessions RENAME COLUMN agent TO coworkerType;
         `,
       },
     ]
