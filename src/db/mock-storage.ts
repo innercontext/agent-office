@@ -88,6 +88,9 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
       session_id: sessionId,
       agent,
       status: null,
+      description: null,
+      philosophy: null,
+      visual_description: null,
       created_at: new Date(),
     }
     this.sessions.push(newSession)
@@ -101,29 +104,20 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     }
   }
 
-  async updateSessionAgent(name: string, agent: string): Promise<SessionRow> {
+  async updateSession(
+    name: string,
+    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+  ): Promise<SessionRow | null> {
     const session = this.sessions.find(s => s.name === name)
     if (!session) {
-      throw new Error(`Session ${name} not found`)
+      return null
     }
-    session.agent = agent
+    if (updates.agent !== undefined) session.agent = updates.agent
+    if (updates.status !== undefined) session.status = updates.status
+    if (updates.description !== undefined) session.description = updates.description
+    if (updates.philosophy !== undefined) session.philosophy = updates.philosophy
+    if (updates.visual_description !== undefined) session.visual_description = updates.visual_description
     return session
-  }
-
-  async updateSessionStatus(name: string, status: string | null): Promise<void> {
-    const session = this.sessions.find(s => s.name === name)
-    if (!session) {
-      throw new Error(`Session ${name} not found`)
-    }
-    session.status = status
-  }
-
-  async updateSessionId(name: string, sessionId: string): Promise<void> {
-    const session = this.sessions.find(s => s.name === name)
-    if (!session) {
-      throw new Error(`Session ${name} not found`)
-    }
-    session.session_id = sessionId
   }
 
   async sessionExists(name: string): Promise<boolean> {
@@ -239,6 +233,10 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
         message.notified = true
       }
     }
+  }
+
+  async deleteMessagesForCoworker(name: string): Promise<void> {
+    this.messages = this.messages.filter(m => m.from_name !== name && m.to_name !== name)
   }
 
   // Cron Jobs

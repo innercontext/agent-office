@@ -4,6 +4,9 @@ export interface SessionRow {
   session_id: string
   agent: string
   status: string | null
+  description: string | null
+  philosophy: string | null
+  visual_description: string | null
   created_at: Date
 }
 

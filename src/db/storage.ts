@@ -32,9 +32,10 @@ export interface AgentOfficeStorage {
   getSessionIdByName(name: string): Promise<number | null>
   createSession(name: string, sessionId: string, agent: string): Promise<SessionRow>
   deleteSession(id: number): Promise<void>
-  updateSessionAgent(name: string, agent: string): Promise<SessionRow>
-  updateSessionStatus(name: string, status: string | null): Promise<void>
-  updateSessionId(name: string, sessionId: string): Promise<void>
+  updateSession(
+    name: string,
+    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+  ): Promise<SessionRow | null>
   sessionExists(name: string): Promise<boolean>
 
   // Config
@@ -54,6 +55,7 @@ export interface AgentOfficeStorage {
   markMessageAsRead(id: number): Promise<MessageRow | null>
   markMessageAsInjected(id: number): Promise<void>
   markMessagesAsNotified(ids: number[]): Promise<void>
+  deleteMessagesForCoworker(name: string): Promise<void>
 
   // Cron Jobs
   listCronJobs(): Promise<CronJobRow[]>

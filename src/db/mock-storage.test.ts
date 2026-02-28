@@ -50,7 +50,7 @@ describe('MockAgentOfficeStorage', () => {
 
     it('should update session status', async () => {
       await storage.createSession('test', 'id123', 'agent1')
-      await storage.updateSessionStatus('test', 'busy')
+      await storage.updateSession('test', { status: 'busy' })
 
       const updated = await storage.getSessionByName('test')
       expect(updated?.status).toBe('busy')

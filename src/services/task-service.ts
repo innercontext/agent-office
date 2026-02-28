@@ -2,25 +2,6 @@ import { AgentOfficeStorage, TaskRow } from '../db/index.js'
 
 export type ColumnName = 'idea' | 'approved idea' | 'working on' | 'blocked' | 'ready for review' | 'done'
 
-export interface TaskInfo {
-  id: number
-  title: string
-  description: string
-  assignee: string | null
-  column: string
-  dependencies: number[]
-  created_at: Date
-  updated_at: Date
-}
-
-export interface TransitionInfo {
-  id: number
-  task_id: number
-  from_column: string | null
-  to_column: string
-  timestamp: Date
-}
-
 export interface ColumnStats {
   column: string
   count: number

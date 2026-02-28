@@ -2,7 +2,7 @@ import { Command, Option } from 'commander'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { listCoworkers, setStatus, createSession } from './commands/sessions.js'
+import { listCoworkers, getCoworkerInfo, updateCoworker, createSession, deleteCoworker } from './commands/sessions.js'
 import { sendMessage, checkUnreadMail, getUnreadMail } from './commands/messages.js'
 import {
   listCrons,
@@ -98,14 +98,51 @@ program
   })
 
 program
-  .command('set-status')
-  .description('Set status for a coworker')
+  .command('delete-coworker')
+  .description('Delete a coworker (session)')
   .requiredOption('-n, --name <name>', 'Coworker name')
-  .option('-s, --status <status>', 'Status to set (omit to clear)')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    await setStatus(storage, options.name, options.status ?? null, useJson)
+    await deleteCoworker(storage, options.name, useJson)
+    await storage.close()
+  })
+
+program
+  .command('update-coworker')
+  .description("Update a coworker's information (status, description, philosophy, visual description)")
+  .requiredOption('-n, --name <name>', 'Coworker name')
+  .option('-a, --agent <agent>', 'Set the agent name')
+  .option('-s, --status <status>', 'Set the status (omit to clear)')
+  .option('-d, --description <description>', 'Set the description (omit to clear)')
+  .option('-p, --philosophy <philosophy>', 'Set the philosophy (omit to clear)')
+  .option('-v, --visual-description <visual>', 'Set the visual description (omit to clear)')
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await updateCoworker(
+      storage,
+      options.name,
+      {
+        agent: options.agent ?? null,
+        status: options.status ?? null,
+        description: options.description ?? null,
+        philosophy: options.philosophy ?? null,
+        visualDescription: options.visualDescription ?? null,
+      },
+      useJson
+    )
+    await storage.close()
+  })
+
+program
+  .command('get-coworker-info')
+  .description('Get coworker information (name, description, philosophy)')
+  .requiredOption('-n, --name <name>', 'Coworker name')
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await getCoworkerInfo(storage, options.name, useJson)
     await storage.close()
   })
 

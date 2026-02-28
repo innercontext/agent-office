@@ -8,14 +8,32 @@ export async function listCoworkers(storage: AgentOfficeStorage, useJson: boolea
   console.log(formatOutput(coworkers, useJson))
 }
 
-export async function setStatus(
+export async function getCoworkerInfo(storage: AgentOfficeStorage, name: string, useJson: boolean): Promise<void> {
+  const service = new SessionService(storage)
+  const coworker = await service.getCoworkerInfo(name)
+  console.log(formatOutput(coworker, useJson))
+}
+
+export async function updateCoworker(
   storage: AgentOfficeStorage,
   name: string,
-  status: string | null,
+  updates: {
+    agent?: string | null
+    status?: string | null
+    description?: string | null
+    philosophy?: string | null
+    visualDescription?: string | null
+  },
   useJson: boolean
 ): Promise<void> {
   const service = new SessionService(storage)
-  const session = await service.setStatus(name, status)
+  const session = await service.updateCoworker(name, {
+    ...(updates.agent !== undefined && updates.agent !== null ? { agent: updates.agent } : {}),
+    status: updates.status,
+    description: updates.description,
+    philosophy: updates.philosophy,
+    visual_description: updates.visualDescription,
+  })
   console.log(formatOutput(session, useJson))
 }
 
@@ -29,4 +47,40 @@ export async function createSession(
   const service = new SessionService(storage)
   const session = await service.createSession(name, sessionId, agent)
   console.log(formatOutput(session, useJson))
+}
+
+export async function deleteCoworker(storage: AgentOfficeStorage, name: string, useJson: boolean): Promise<void> {
+  const service = new SessionService(storage)
+  const session = await service.getSessionByName(name)
+  if (!session) {
+    throw new Error(`Coworker ${name} not found`)
+  }
+
+  await storage.begin(async tx => {
+    // Delete all messages to/from this coworker
+    await tx.deleteMessagesForCoworker(name)
+
+    // Delete all cron jobs for this coworker
+    const cronJobs = await tx.listCronJobsForSession(name)
+    for (const job of cronJobs) {
+      await tx.deleteCronJob(job.id)
+    }
+
+    // Delete all cron requests for this coworker
+    const cronRequests = await tx.listCronRequests({ sessionName: name })
+    for (const request of cronRequests) {
+      await tx.deleteCronRequest(request.id)
+    }
+
+    // Unassign all tasks assigned to this coworker
+    const tasks = await tx.searchTasks('', { assignee: name })
+    for (const task of tasks) {
+      await tx.updateTask(task.id, { assignee: null })
+    }
+
+    // Finally, delete the coworker session
+    await tx.deleteSession(session.id)
+  })
+
+  console.log(formatOutput({ success: true, message: `Coworker ${name} deleted` }, useJson))
 }

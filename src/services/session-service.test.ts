@@ -30,7 +30,7 @@ describe('SessionService', () => {
 
     it('should include agent and status info', async () => {
       await storage.createSession('session1', 'id1', 'agent1')
-      await storage.updateSessionStatus('session1', 'busy')
+      await storage.updateSession('session1', { status: 'busy' })
 
       const coworkers = await service.listCoworkers()
       expect(coworkers[0].agent).toBe('agent1')
@@ -38,11 +38,11 @@ describe('SessionService', () => {
     })
   })
 
-  describe('setStatus', () => {
+  describe('updateCoworker', () => {
     it('should set status for existing session', async () => {
       await storage.createSession('session1', 'id1', 'agent1')
 
-      const updated = await service.setStatus('session1', 'available')
+      const updated = await service.updateCoworker('session1', { status: 'available' })
 
       expect(updated.status).toBe('available')
       const stored = await storage.getSessionByName('session1')
@@ -51,15 +51,17 @@ describe('SessionService', () => {
 
     it('should clear status when null is passed', async () => {
       await storage.createSession('session1', 'id1', 'agent1')
-      await storage.updateSessionStatus('session1', 'busy')
+      await storage.updateSession('session1', { status: 'busy' })
 
-      const updated = await service.setStatus('session1', null)
+      const updated = await service.updateCoworker('session1', { status: null })
 
       expect(updated.status).toBeNull()
     })
 
     it('should throw error for non-existent session', async () => {
-      await expect(service.setStatus('nonexistent', 'available')).rejects.toThrow('Session nonexistent not found')
+      await expect(service.updateCoworker('nonexistent', { status: 'available' })).rejects.toThrow(
+        'Coworker nonexistent not found'
+      )
     })
   })
 
@@ -76,7 +78,7 @@ describe('SessionService', () => {
       await service.createSession('session1', 'id1', 'agent1')
 
       await expect(service.createSession('session1', 'id2', 'agent2')).rejects.toThrow(
-        'Session session1 already exists'
+        'Coworker session1 already exists'
       )
     })
   })

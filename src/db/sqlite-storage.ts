@@ -24,7 +24,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
   // Sessions
   async listSessions(): Promise<SessionRow[]> {
     const stmt = this.db.prepare(`
-      SELECT id, name, session_id, agent_code, agent, status, created_at
+      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
       FROM sessions
       ORDER BY created_at DESC
     `)
@@ -35,6 +35,9 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
       agent_code: string
       agent: string
       status: string | null
+      description: string | null
+      philosophy: string | null
+      visual_description: string | null
       created_at: string
     }>
     return rows.map(row => ({
@@ -45,7 +48,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 
   async getSessionByName(name: string): Promise<SessionRow | null> {
     const stmt = this.db.prepare(`
-      SELECT id, name, session_id, agent_code, agent, status, created_at
+      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
       FROM sessions WHERE name = ?
     `)
     const row = stmt.get(name) as any
@@ -58,7 +61,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
 
   async getSessionByAgentCode(agentCode: string): Promise<SessionRow | null> {
     const stmt = this.db.prepare(`
-      SELECT id, name, session_id, agent_code, agent, status, created_at
+      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
       FROM sessions WHERE agent_code = ?
     `)
     const row = stmt.get(agentCode) as any
@@ -109,34 +112,55 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     }
   }
 
-  async updateSessionAgent(name: string, agent: string): Promise<SessionRow> {
-    const stmt = this.db.prepare(`
-      UPDATE sessions
-      SET agent = ?
-      WHERE name = ?
-      RETURNING id, name, session_id, agent_code, agent, status, created_at
-    `)
-    const row = stmt.get(agent, name) as any
+  async updateSession(
+    name: string,
+    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+  ): Promise<SessionRow | null> {
+    // Get current session
+    const current = this.getSessionByName(name)
+    if (!current) {
+      return null
+    }
+
+    // Build dynamic update
+    const setParts: string[] = []
+    const values: any[] = []
+
+    if (updates.agent !== undefined) {
+      setParts.push('agent = ?')
+      values.push(updates.agent)
+    }
+    if (updates.status !== undefined) {
+      setParts.push('status = ?')
+      values.push(updates.status)
+    }
+    if (updates.description !== undefined) {
+      setParts.push('description = ?')
+      values.push(updates.description)
+    }
+    if (updates.philosophy !== undefined) {
+      setParts.push('philosophy = ?')
+      values.push(updates.philosophy)
+    }
+    if (updates.visual_description !== undefined) {
+      setParts.push('visual_description = ?')
+      values.push(updates.visual_description)
+    }
+
+    if (setParts.length === 0) {
+      return current
+    }
+
+    values.push(name)
+    const sql = `UPDATE sessions SET ${setParts.join(', ')} WHERE name = ? RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at`
+    const stmt = this.db.prepare(sql)
+    const row = stmt.get(...values) as any
+    if (!row) return null
+
     return {
       ...row,
       created_at: new Date(row.created_at),
     }
-  }
-
-  async updateSessionStatus(name: string, status: string | null): Promise<void> {
-    const stmt = this.db.prepare(`
-      UPDATE sessions
-      SET status = ?
-      WHERE name = ?
-    `)
-    stmt.run(status, name)
-  }
-
-  async updateSessionId(name: string, sessionId: string): Promise<void> {
-    const stmt = this.db.prepare(`
-      UPDATE sessions SET session_id = ? WHERE name = ?
-    `)
-    stmt.run(sessionId, name)
   }
 
   async sessionExists(name: string): Promise<boolean> {
@@ -297,6 +321,11 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     const placeholders = ids.map(() => '?').join(',')
     const stmt = this.db.prepare(`UPDATE messages SET notified = 1 WHERE id IN (${placeholders})`)
     stmt.run(...ids)
+  }
+
+  async deleteMessagesForCoworker(name: string): Promise<void> {
+    const stmt = this.db.prepare(`DELETE FROM messages WHERE from_name = ? OR to_name = ?`)
+    stmt.run(name, name)
   }
 
   // Cron Jobs
@@ -887,6 +916,15 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
           );
           CREATE INDEX IF NOT EXISTS idx_cron_requests_session_name ON cron_requests(session_name);
           CREATE INDEX IF NOT EXISTS idx_cron_requests_status ON cron_requests(status);
+        `,
+      },
+      {
+        version: 12,
+        name: 'add_description_and_philosophy_to_sessions',
+        sql: `
+          ALTER TABLE sessions ADD COLUMN description TEXT;
+          ALTER TABLE sessions ADD COLUMN philosophy TEXT;
+          ALTER TABLE sessions ADD COLUMN visual_description TEXT;
         `,
       },
     ]

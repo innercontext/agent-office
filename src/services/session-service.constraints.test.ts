@@ -16,7 +16,7 @@ describe('SessionService - Constraint Handling', () => {
       await service.createSession('duplicate', 'id1', 'agent1')
 
       await expect(service.createSession('duplicate', 'id2', 'agent2')).rejects.toThrow(
-        'Session duplicate already exists'
+        'Coworker duplicate already exists'
       )
     })
 

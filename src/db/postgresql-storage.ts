@@ -21,7 +21,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   // Sessions
   async listSessions(): Promise<SessionRow[]> {
     return this.sql<SessionRow[]>`
-      SELECT id, name, session_id, agent_code, agent, status, created_at
+      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, created_at
       FROM sessions
       ORDER BY created_at DESC
     `
@@ -29,7 +29,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
 
   async getSessionByName(name: string): Promise<SessionRow | null> {
     const [row] = await this.sql<SessionRow[]>`
-      SELECT id, name, session_id, agent_code, agent, status, created_at
+      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, created_at
       FROM sessions WHERE name = ${name}
     `
     return row ?? null
@@ -37,7 +37,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
 
   async getSessionByAgentCode(agentCode: string): Promise<SessionRow | null> {
     const [row] = await this.sql<SessionRow[]>`
-      SELECT id, name, session_id, agent_code, agent, status, created_at
+      SELECT id, name, session_id, agent_code, agent, status, description, philosophy, created_at
       FROM sessions WHERE agent_code = ${agentCode}
     `
     return row ?? null
@@ -54,7 +54,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     const [row] = await this.sql<SessionRow[]>`
       INSERT INTO sessions (name, session_id, agent)
       VALUES (${name}, ${sessionId}, ${agent})
-      RETURNING id, name, session_id, agent_code, agent, status, created_at
+      RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, created_at
     `
     return row!
   }
@@ -68,33 +68,56 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
       UPDATE sessions
       SET agent_code = gen_random_uuid()
       WHERE name = ${name}
-      RETURNING id, name, session_id, agent_code, agent, status, created_at
+      RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, created_at
     `
     return row!
   }
 
-  async updateSessionAgent(name: string, agent: string): Promise<SessionRow> {
-    const [row] = await this.sql<SessionRow[]>`
-      UPDATE sessions
-      SET agent = ${agent}
-      WHERE name = ${name}
-      RETURNING id, name, session_id, agent_code, agent, status, created_at
-    `
-    return row!
-  }
+  async updateSession(
+    name: string,
+    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+  ): Promise<SessionRow | null> {
+    // Build dynamic update using unsafe for conditional fields
+    const setParts: string[] = []
+    const values: any[] = []
 
-  async updateSessionStatus(name: string, status: string | null): Promise<void> {
-    await this.sql`
-      UPDATE sessions
-      SET status = ${status}
-      WHERE name = ${name}
-    `
-  }
+    if (updates.agent !== undefined) {
+      setParts.push('agent = ')
+      values.push(updates.agent)
+    }
+    if (updates.status !== undefined) {
+      setParts.push('status = ')
+      values.push(updates.status)
+    }
+    if (updates.description !== undefined) {
+      setParts.push('description = ')
+      values.push(updates.description)
+    }
+    if (updates.philosophy !== undefined) {
+      setParts.push('philosophy = ')
+      values.push(updates.philosophy)
+    }
+    if (updates.visual_description !== undefined) {
+      setParts.push('visual_description = ')
+      values.push(updates.visual_description)
+    }
 
-  async updateSessionId(name: string, sessionId: string): Promise<void> {
-    await this.sql`
-      UPDATE sessions SET session_id = ${sessionId} WHERE name = ${name}
+    if (setParts.length === 0) {
+      return this.getSessionByName(name)
+    }
+
+    // Build the SET clause
+    const setClause = setParts.map((part, i) => `${part}$${i + 1}`).join(', ')
+    const sql = `
+      UPDATE sessions
+      SET ${setClause}
+      WHERE name = $${values.length + 1}
+      RETURNING id, name, session_id, agent_code, agent, status, description, philosophy, visual_description, created_at
     `
+    values.push(name)
+
+    const [row] = await this.sql.unsafe(sql, values)
+    return (row as unknown as SessionRow) ?? null
   }
 
   async sessionExists(name: string): Promise<boolean> {
@@ -208,6 +231,10 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
   async markMessagesAsNotified(ids: number[]): Promise<void> {
     if (ids.length === 0) return
     await this.sql`UPDATE messages SET notified = TRUE WHERE id = ANY(${ids})`
+  }
+
+  async deleteMessagesForCoworker(name: string): Promise<void> {
+    await this.sql`DELETE FROM messages WHERE from_name = ${name} OR to_name = ${name}`
   }
 
   // Cron Jobs
@@ -624,6 +651,15 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
           );
           CREATE INDEX IF NOT EXISTS idx_cron_requests_session_name ON cron_requests(session_name);
           CREATE INDEX IF NOT EXISTS idx_cron_requests_status ON cron_requests(status);
+        `,
+      },
+      {
+        version: 12,
+        name: 'add_description_and_philosophy_to_sessions',
+        sql: `
+          ALTER TABLE sessions ADD COLUMN IF NOT EXISTS description TEXT;
+          ALTER TABLE sessions ADD COLUMN IF NOT EXISTS philosophy TEXT;
+          ALTER TABLE sessions ADD COLUMN IF NOT EXISTS visual_description TEXT;
         `,
       },
     ]

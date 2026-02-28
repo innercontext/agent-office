@@ -1,14 +1,5 @@
 import { AgentOfficeStorage, MessageRow } from '../db/index.js'
 
-export interface MessageInfo {
-  id: number
-  from: string
-  to: string
-  body: string
-  read: boolean
-  created_at: Date
-}
-
 export class MessageService {
   constructor(private storage: AgentOfficeStorage) {}
 

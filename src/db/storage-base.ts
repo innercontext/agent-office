@@ -17,9 +17,10 @@ export abstract class AgentOfficeStorageBase implements AgentOfficeStorage {
   abstract getSessionIdByName(name: string): Promise<number | null>
   abstract createSession(name: string, sessionId: string, agent: string): Promise<SessionRow>
   abstract deleteSession(id: number): Promise<void>
-  abstract updateSessionAgent(name: string, agent: string): Promise<SessionRow>
-  abstract updateSessionStatus(name: string, status: string | null): Promise<void>
-  abstract updateSessionId(name: string, sessionId: string): Promise<void>
+  abstract updateSession(
+    name: string,
+    updates: Partial<Pick<SessionRow, 'agent' | 'status' | 'description' | 'philosophy' | 'visual_description'>>
+  ): Promise<SessionRow | null>
   abstract sessionExists(name: string): Promise<boolean>
   abstract getAllConfig(): Promise<ConfigRow[]>
   abstract getConfig(key: string): Promise<string | null>
@@ -34,6 +35,7 @@ export abstract class AgentOfficeStorageBase implements AgentOfficeStorage {
   abstract markMessageAsRead(id: number): Promise<MessageRow | null>
   abstract markMessageAsInjected(id: number): Promise<void>
   abstract markMessagesAsNotified(ids: number[]): Promise<void>
+  abstract deleteMessagesForCoworker(name: string): Promise<void>
   abstract listCronJobs(): Promise<CronJobRow[]>
   abstract listCronJobsForSession(sessionName: string): Promise<CronJobRow[]>
   abstract getCronJobById(id: number): Promise<CronJobRow | null>
