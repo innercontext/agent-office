@@ -163,8 +163,8 @@ program
   })
 
 program
-  .command('check-unread-mail')
-  .description('Check if there is unread mail for a coworker')
+  .command('check-unread-messages')
+  .description('Check if there are unread messages for a coworker')
   .requiredOption('-c, --coworker <name>', 'Coworker name to check')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
@@ -174,8 +174,8 @@ program
   })
 
 program
-  .command('get-unread-mail')
-  .description('Get all unread mail for a coworker and mark as read')
+  .command('get-unread-messages')
+  .description('Get all unread messages for a coworker and mark as read')
   .requiredOption('-c, --coworker <name>', 'Coworker name')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
