@@ -32,11 +32,14 @@ export async function checkUnreadMail(
     }
   }
 
-  if (totalUnread === 0) {
-    throw new Error(`No unread messages for ${coworkerName}`)
+  // Unix philosophy: return 0 on success, include both backward-compatible hasUnread and new counts
+  const result = {
+    hasUnread: totalUnread > 0,
+    total: totalUnread,
+    counts: counts,
   }
 
-  console.log(formatOutput(counts, useJson))
+  console.log(formatOutput(result, useJson))
 }
 
 export async function getUnreadMail(
