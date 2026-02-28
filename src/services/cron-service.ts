@@ -1,4 +1,4 @@
-import { parseCronExpression } from 'cron-schedule'
+import { Cron } from 'croner'
 import { AgentOfficeStorage, CronJobRow, CronRequestRow, CronHistoryRow } from '../db/index.js'
 
 export interface CronJobInfo {
@@ -196,14 +196,16 @@ export class CronService {
     }
 
     try {
-      const cron = parseCronExpression(job.schedule)
+      // Create Cron instance with timezone if specified
+      const cronOptions = job.timezone ? { timezone: job.timezone } : undefined
+      const cron = new Cron(job.schedule, cronOptions)
 
       // Check if the schedule matches the current minute
       // We truncate seconds to match by minute
       const checkDate = new Date(referenceDate)
       checkDate.setSeconds(0, 0)
 
-      return cron.matchDate(checkDate)
+      return cron.match(checkDate)
     } catch (error) {
       throw new Error(`Invalid cron schedule "${job.schedule}": ${error}`)
     }

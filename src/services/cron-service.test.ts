@@ -281,6 +281,37 @@ describe('CronService', () => {
       const shouldRunAt4AM = await service.checkCronJob(job.id, at4AM)
       expect(shouldRunAt4AM).toBe(false)
     })
+
+    it('should respect timezone for cron job checks', async () => {
+      // Create a job that runs at 3 AM UTC
+      const job = await service.createCronJob('job1', 'session1', '0 3 * * *', 'UTC', 'Hello!')
+
+      // 3:00 AM UTC = 10:00 PM previous day EST (UTC-5, assuming no DST)
+      // Check at 3:00 AM UTC - should match
+      const at3AMUTC = new Date('2024-01-15T03:00:00Z')
+      const shouldRunAt3AMUTC = await service.checkCronJob(job.id, at3AMUTC)
+      expect(shouldRunAt3AMUTC).toBe(true)
+
+      // Check at 4:00 AM UTC - should not match (job runs at 3 AM UTC)
+      const at4AMUTC = new Date('2024-01-15T04:00:00Z')
+      const shouldRunAt4AMUTC = await service.checkCronJob(job.id, at4AMUTC)
+      expect(shouldRunAt4AMUTC).toBe(false)
+    })
+
+    it('should handle different timezones correctly', async () => {
+      // Job that runs at 9 AM America/New_York
+      const job = await service.createCronJob('job1', 'session1', '0 9 * * *', 'America/New_York', 'Hello!')
+
+      // When it's 9 AM in New York, it's 14:00 (2 PM) UTC
+      const at9AMEastern = new Date('2024-01-15T14:00:00Z') // 9 AM EST = 2 PM UTC
+      const shouldRun = await service.checkCronJob(job.id, at9AMEastern)
+      expect(shouldRun).toBe(true)
+
+      // When it's 10 AM in New York, it's 15:00 (3 PM) UTC - should not match
+      const at10AMEastern = new Date('2024-01-15T15:00:00Z')
+      const shouldNotRun = await service.checkCronJob(job.id, at10AMEastern)
+      expect(shouldNotRun).toBe(false)
+    })
   })
 
   describe('getCronRequestById', () => {
