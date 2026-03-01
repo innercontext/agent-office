@@ -185,6 +185,20 @@ program
     await storage.close()
   })
 
+program
+  .command('list-messages-between')
+  .description('Show all messages between two coworkers')
+  .requiredOption('--coworker1 <name>', 'First coworker name')
+  .requiredOption('--coworker2 <name>', 'Second coworker name')
+  .option('--start <isoTime>', 'Start time (ISO 8601 format)')
+  .option('--end <isoTime>', 'End time (ISO 8601 format)')
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await listMessagesBetween(storage, options.coworker1, options.coworker2, options.start, options.end, useJson)
+    await storage.close()
+  })
+
 // Cron commands
 program
   .command('list-crons')
@@ -499,20 +513,6 @@ program
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
     await getTaskHistory(storage, options.id, useJson)
-    await storage.close()
-  })
-
-program
-  .command('list-messages-between')
-  .description('Show all messages between two coworkers')
-  .requiredOption('--coworker1 <name>', 'First coworker name')
-  .requiredOption('--coworker2 <name>', 'Second coworker name')
-  .option('--start <isoTime>', 'Start time (ISO 8601 format)')
-  .option('--end <isoTime>', 'End time (ISO 8601 format)')
-  .action(async (options, command) => {
-    const useJson = command.optsWithGlobals().json
-    const storage = await getStorage()
-    await listMessagesBetween(storage, options.coworker1, options.coworker2, options.start, options.end, useJson)
     await storage.close()
   })
 
