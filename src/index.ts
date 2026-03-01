@@ -268,8 +268,8 @@ program
   })
 
 program
-  .command('list-active-cron-jobs')
-  .description('List all active cron jobs for a specific coworker that should run this minute (for AI execution)')
+  .command('list-active-cron-actions')
+  .description('List all active cron actions for a specific coworker that should run this minute (for AI execution)')
   .requiredOption('-c, --coworker <name>', 'Coworker name to check')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
