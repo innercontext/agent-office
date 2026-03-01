@@ -293,8 +293,8 @@ program
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    // Combine task and notify into a message
-    const message = `${options.task} and notify ${options.notify} when complete`
+    // Combine task and notify into a structured message
+    const message = `Action To Do:\n${options.task}\n\nWho To Notify When Complete:\n${options.notify}`
     await createCron(storage, options.name, options.coworker, options.schedule, message, options.timezone, useJson)
     await storage.close()
   })
@@ -325,8 +325,8 @@ program
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    // Combine task and notify into a message
-    const message = `${options.task} and notify ${options.notify} when complete`
+    // Combine task and notify into a structured message
+    const message = `Action To Do:\n${options.task}\n\nWho To Notify When Complete:\n${options.notify}`
     await requestCron(storage, options.name, options.coworker, options.schedule, message, options.timezone, useJson)
     await storage.close()
   })
