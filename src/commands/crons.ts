@@ -2,9 +2,9 @@ import { AgentOfficeStorage } from '../db/index.js'
 import { CronService } from '../services/index.js'
 import { formatOutput } from '../lib/output.js'
 
-export async function listCrons(storage: AgentOfficeStorage, useJson: boolean): Promise<void> {
+export async function listCrons(storage: AgentOfficeStorage, coworkerName: string, useJson: boolean): Promise<void> {
   const service = new CronService(storage)
-  const crons = await service.listCronJobs()
+  const crons = await service.listCronJobsForSession(coworkerName)
   console.log(formatOutput(crons, useJson))
 }
 

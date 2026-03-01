@@ -188,11 +188,12 @@ program
 // Cron commands
 program
   .command('list-crons')
-  .description('List all cron jobs')
-  .action(async (_args, command) => {
+  .description('List all cron jobs for a specific coworker')
+  .requiredOption('-c, --coworker <name>', 'Coworker name')
+  .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    await listCrons(storage, useJson)
+    await listCrons(storage, options.coworker, useJson)
     await storage.close()
   })
 
