@@ -270,20 +270,18 @@ program
   .requiredOption('-n, --name <name>', 'Cron job name')
   .requiredOption('-c, --coworker <coworker>', 'Coworker name')
   .requiredOption('-S, --schedule <schedule>', 'Cron schedule expression')
-  .requiredOption('-m, --message <message>', 'Message to send')
+  .requiredOption('-t, --task <task>', 'Task to perform (action to do)')
+  .requiredOption(
+    '-N, --notify <instructions>',
+    'Instructions on who to notify when complete (can be names or descriptions)'
+  )
   .option('-z, --timezone <timezone>', 'Timezone (optional)')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    await createCron(
-      storage,
-      options.name,
-      options.coworker,
-      options.schedule,
-      options.message,
-      options.timezone,
-      useJson
-    )
+    // Combine task and notify into a message
+    const message = `${options.task} and notify ${options.notify} when complete`
+    await createCron(storage, options.name, options.coworker, options.schedule, message, options.timezone, useJson)
     await storage.close()
   })
 
@@ -304,20 +302,18 @@ program
   .requiredOption('-n, --name <name>', 'Cron job name')
   .requiredOption('-c, --coworker <coworker>', 'Coworker name')
   .requiredOption('-S, --schedule <schedule>', 'Cron schedule expression')
-  .requiredOption('-m, --message <message>', 'Message to send')
+  .requiredOption('-t, --task <task>', 'Task to perform (action to do)')
+  .requiredOption(
+    '-N, --notify <instructions>',
+    'Instructions on who to notify when complete (can be names or descriptions)'
+  )
   .option('-z, --timezone <timezone>', 'Timezone (optional)')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    await requestCron(
-      storage,
-      options.name,
-      options.coworker,
-      options.schedule,
-      options.message,
-      options.timezone,
-      useJson
-    )
+    // Combine task and notify into a message
+    const message = `${options.task} and notify ${options.notify} when complete`
+    await requestCron(storage, options.name, options.coworker, options.schedule, message, options.timezone, useJson)
     await storage.close()
   })
 
