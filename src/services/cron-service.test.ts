@@ -406,4 +406,58 @@ describe('CronService', () => {
       await expect(service.deleteCronRequest(999)).rejects.toThrow('Cron request 999 not found')
     })
   })
+
+  describe('getActiveCronJobs', () => {
+    beforeEach(async () => {
+      await storage.createSession('session1', 'agent1')
+      await storage.createSession('session2', 'agent2')
+    })
+
+    it('should return all active cron jobs that should run this minute', async () => {
+      // Create jobs that run every minute
+      await service.createCronJob('job1', 'session1', '* * * * *', null, 'Hello 1!')
+      await service.createCronJob('job2', 'session2', '* * * * *', null, 'Hello 2!')
+
+      // Create a job that runs at a specific time (should not be active now)
+      await service.createCronJob('job3', 'session1', '0 3 * * *', null, 'Hello 3!')
+
+      const activeJobs = await service.getActiveCronJobs()
+
+      expect(activeJobs).toHaveLength(2)
+      expect(activeJobs.map(j => j.name)).toContain('job1')
+      expect(activeJobs.map(j => j.name)).toContain('job2')
+    })
+
+    it('should not include disabled cron jobs', async () => {
+      const job = await service.createCronJob('job1', 'session1', '* * * * *', null, 'Hello!')
+      await storage.disableCronJob(job.id)
+
+      const activeJobs = await service.getActiveCronJobs()
+
+      expect(activeJobs).toHaveLength(0)
+    })
+
+    it('should return empty array when no jobs are active', async () => {
+      await storage.createSession('session1', 'agent1')
+      // Create a job that runs at a specific time (not now)
+      await service.createCronJob('job1', 'session1', '0 3 * * *', null, 'Hello!')
+
+      const activeJobs = await service.getActiveCronJobs()
+
+      expect(activeJobs).toHaveLength(0)
+    })
+
+    it('should check at specific reference date', async () => {
+      // Create jobs that run at 3 AM
+      await service.createCronJob('job1', 'session1', '0 3 * * *', null, 'Hello 1!')
+      await service.createCronJob('job2', 'session2', '0 4 * * *', null, 'Hello 2!') // Different time
+
+      // Check at 3:00 AM
+      const at3AM = new Date('2024-01-15T03:00:00')
+      const activeJobs = await service.getActiveCronJobs(at3AM)
+
+      expect(activeJobs).toHaveLength(1)
+      expect(activeJobs[0].name).toBe('job1')
+    })
+  })
 })

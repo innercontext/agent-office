@@ -210,4 +210,31 @@ export class CronService {
       throw new Error(`Invalid cron schedule "${job.schedule}": ${error}`)
     }
   }
+
+  async getActiveCronJobs(referenceDate: Date = new Date()): Promise<CronJobRow[]> {
+    const allJobs = await this.storage.listCronJobs()
+    const activeJobs: CronJobRow[] = []
+
+    for (const job of allJobs) {
+      if (!job.enabled) {
+        continue
+      }
+
+      try {
+        const cronOptions = job.timezone ? { timezone: job.timezone } : undefined
+        const cron = new Cron(job.schedule, cronOptions)
+        const checkDate = new Date(referenceDate)
+        checkDate.setSeconds(0, 0)
+
+        if (cron.match(checkDate)) {
+          activeJobs.push(job)
+        }
+      } catch (error) {
+        // Skip invalid cron schedules
+        continue
+      }
+    }
+
+    return activeJobs
+  }
 }

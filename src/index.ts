@@ -15,6 +15,7 @@ import {
   requestCron,
   createCron,
   checkCronJob,
+  listActiveCronJobs,
 } from './commands/crons.js'
 import {
   listCronRequests,
@@ -248,6 +249,17 @@ program
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
     await checkCronJob(storage, options.id, useJson)
+    await storage.close()
+  })
+
+program
+  .command('list-active-cron-jobs')
+  .description('List all active cron jobs for a specific coworker that should run this minute (for AI execution)')
+  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await listActiveCronJobs(storage, options.coworker, useJson)
     await storage.close()
   })
 

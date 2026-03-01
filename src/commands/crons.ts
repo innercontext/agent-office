@@ -72,3 +72,17 @@ export async function checkCronJob(storage: AgentOfficeStorage, id: number, useJ
   const shouldRun = await service.checkCronJob(id)
   console.log(formatOutput({ shouldRun }, useJson))
 }
+
+export async function listActiveCronJobs(
+  storage: AgentOfficeStorage,
+  coworkerName: string,
+  useJson: boolean
+): Promise<void> {
+  const service = new CronService(storage)
+  let activeJobs = await service.getActiveCronJobs()
+
+  // Filter by coworker
+  activeJobs = activeJobs.filter(job => job.session_name === coworkerName)
+
+  console.log(formatOutput(activeJobs, useJson))
+}
