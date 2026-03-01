@@ -98,5 +98,11 @@ export async function listActiveCronJobs(
   // Filter by coworker
   activeJobs = activeJobs.filter(job => job.session_name === coworkerName)
 
-  console.log(formatOutput(activeJobs, useJson))
+  // Map to only return id and action (message)
+  const actions = activeJobs.map(job => ({
+    id: job.id,
+    action: job.message,
+  }))
+
+  console.log(formatOutput(actions, useJson))
 }
