@@ -67,10 +67,24 @@ export async function createCron(
   console.log(formatOutput(job, useJson))
 }
 
-export async function checkCronJob(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function checkCronJobs(
+  storage: AgentOfficeStorage,
+  coworkerName: string,
+  useJson: boolean
+): Promise<void> {
   const service = new CronService(storage)
-  const shouldRun = await service.checkCronJob(id)
-  console.log(formatOutput({ shouldRun }, useJson))
+  const activeJobs = await service.getActiveCronJobs()
+
+  // Filter by coworker
+  const coworkerJobs = activeJobs.filter(job => job.session_name === coworkerName)
+
+  // Return count similar to check-unread-messages
+  const result = {
+    hasActive: coworkerJobs.length > 0,
+    count: coworkerJobs.length,
+  }
+
+  console.log(formatOutput(result, useJson))
 }
 
 export async function listActiveCronJobs(

@@ -14,7 +14,7 @@ import {
   cronHistory,
   requestCron,
   createCron,
-  checkCronJob,
+  checkCronJobs,
   listActiveCronJobs,
 } from './commands/crons.js'
 import {
@@ -243,13 +243,13 @@ program
   })
 
 program
-  .command('check-cron-job')
-  .description('Check if a cron job should be activated this minute')
-  .requiredOption('-i, --id <id>', 'Cron job ID', parseInt)
+  .command('check-cron-jobs')
+  .description('Check if there are any active cron jobs for a coworker this minute')
+  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
-    await checkCronJob(storage, options.id, useJson)
+    await checkCronJobs(storage, options.coworker, useJson)
     await storage.close()
   })
 
