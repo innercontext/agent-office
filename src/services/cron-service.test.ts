@@ -21,8 +21,8 @@ describe('CronService', () => {
       // Create a session first (required for cron jobs)
       await storage.createSession('session1', 'agent1')
 
-      await service.createCronJob('job-b', 'session1', '0 0 * * *', null, 'Message B')
-      await service.createCronJob('job-a', 'session1', '0 0 * * *', null, 'Message A')
+      await service.createCronJob('job-b', 'session1', '0 0 * * *', 'UTC', 'Message B')
+      await service.createCronJob('job-a', 'session1', '0 0 * * *', 'UTC', 'Message A')
 
       const jobs = await service.listCronJobs()
 
@@ -37,8 +37,8 @@ describe('CronService', () => {
       await storage.createSession('session1', 'agent1')
       await storage.createSession('session2', 'agent2')
 
-      await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Message 1')
-      await service.createCronJob('job2', 'session2', '0 0 * * *', null, 'Message 2')
+      await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Message 1')
+      await service.createCronJob('job2', 'session2', '0 0 * * *', 'UTC', 'Message 2')
 
       const jobs = await service.listCronJobsForSession('session1')
 
@@ -62,16 +62,16 @@ describe('CronService', () => {
     })
 
     it('should throw error when coworker does not exist', async () => {
-      await expect(service.createCronJob('job1', 'nonexistent', '0 0 * * *', null, 'Hello!')).rejects.toThrow(
+      await expect(service.createCronJob('job1', 'nonexistent', '0 0 * * *', 'UTC', 'Hello!')).rejects.toThrow(
         'Coworker nonexistent not found'
       )
     })
 
     it('should throw error when cron job already exists', async () => {
       await storage.createSession('session1', 'agent1')
-      await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
+      await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
-      await expect(service.createCronJob('job1', 'session1', '0 12 * * *', null, 'Different message')).rejects.toThrow(
+      await expect(service.createCronJob('job1', 'session1', '0 12 * * *', 'UTC', 'Different message')).rejects.toThrow(
         'Cron job job1 already exists for coworker session1'
       )
     })
@@ -80,7 +80,7 @@ describe('CronService', () => {
   describe('deleteCronJob', () => {
     it('should delete existing cron job', async () => {
       await storage.createSession('session1', 'agent1')
-      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       await service.deleteCronJob(job.id)
 
@@ -96,7 +96,7 @@ describe('CronService', () => {
   describe('enableCronJob', () => {
     it('should enable disabled cron job', async () => {
       await storage.createSession('session1', 'agent1')
-      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
       await storage.disableCronJob(job.id)
 
       await service.enableCronJob(job.id)
@@ -113,7 +113,7 @@ describe('CronService', () => {
   describe('disableCronJob', () => {
     it('should disable enabled cron job', async () => {
       await storage.createSession('session1', 'agent1')
-      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
       expect(job.enabled).toBe(true)
 
       await service.disableCronJob(job.id)
@@ -135,7 +135,7 @@ describe('CronService', () => {
 
     it('should return cron job history sorted by executed_at desc', async () => {
       await storage.createSession('session1', 'agent1')
-      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       await storage.createCronHistory(job.id, new Date('2024-01-01'), true)
       await storage.createCronHistory(job.id, new Date('2024-01-03'), true)
@@ -151,7 +151,7 @@ describe('CronService', () => {
 
     it('should respect limit parameter', async () => {
       await storage.createSession('session1', 'agent1')
-      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       await storage.createCronHistory(job.id, new Date(), true)
       await storage.createCronHistory(job.id, new Date(), true)
@@ -172,23 +172,25 @@ describe('CronService', () => {
     it('should return all cron requests sorted by requested_at desc', async () => {
       await storage.createSession('session1', 'agent1')
 
-      await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Message 1')
+      await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Message 1')
       await new Promise(resolve => setTimeout(resolve, 10))
-      await service.createCronRequest('req2', 'session1', '0 12 * * *', null, 'Message 2')
+      await service.createCronRequest('req2', 'session1', '0 12 * * *', 'UTC', 'Message 2')
 
       const requests = await service.listCronRequests()
 
       expect(requests).toHaveLength(2)
       expect(requests[0].name).toBe('req2') // Most recent first
+      expect(requests[0].timezone).toBe('UTC')
       expect(requests[1].name).toBe('req1')
+      expect(requests[1].timezone).toBe('UTC')
     })
 
     it('should filter by status', async () => {
       await storage.createSession('session1', 'agent1')
 
-      const req1 = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Message 1')
+      const req1 = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Message 1')
       await storage.updateCronRequestStatus(req1.id, 'approved', 'reviewer1')
-      await service.createCronRequest('req2', 'session1', '0 12 * * *', null, 'Message 2')
+      await service.createCronRequest('req2', 'session1', '0 12 * * *', 'UTC', 'Message 2')
 
       const pendingRequests = await service.listCronRequests({ status: 'pending' })
 
@@ -200,8 +202,8 @@ describe('CronService', () => {
       await storage.createSession('session1', 'agent1')
       await storage.createSession('session2', 'agent2')
 
-      await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Message 1')
-      await service.createCronRequest('req2', 'session2', '0 12 * * *', null, 'Message 2')
+      await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Message 1')
+      await service.createCronRequest('req2', 'session2', '0 12 * * *', 'UTC', 'Message 2')
 
       const session1Requests = await service.listCronRequests({ coworkerName: 'session1' })
 
@@ -225,7 +227,7 @@ describe('CronService', () => {
     })
 
     it('should throw error when coworker does not exist', async () => {
-      await expect(service.createCronRequest('req1', 'nonexistent', '0 0 * * *', null, 'Hello!')).rejects.toThrow(
+      await expect(service.createCronRequest('req1', 'nonexistent', '0 0 * * *', 'UTC', 'Hello!')).rejects.toThrow(
         'Coworker nonexistent not found'
       )
     })
@@ -238,7 +240,7 @@ describe('CronService', () => {
 
     it('should return true when cron job should run this minute', async () => {
       // Create a job that runs every minute
-      const job = await service.createCronJob('job1', 'session1', '* * * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '* * * * *', 'UTC', 'Hello!')
 
       const shouldRun = await service.checkCronJob(job.id)
 
@@ -247,7 +249,7 @@ describe('CronService', () => {
 
     it('should return false when cron job should not run this minute', async () => {
       // Create a job that runs at a specific time (e.g., 3 AM)
-      const job = await service.createCronJob('job1', 'session1', '0 3 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 3 * * *', 'UTC', 'Hello!')
 
       const shouldRun = await service.checkCronJob(job.id)
 
@@ -255,7 +257,7 @@ describe('CronService', () => {
     })
 
     it('should return false when cron job is disabled', async () => {
-      const job = await service.createCronJob('job1', 'session1', '* * * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '* * * * *', 'UTC', 'Hello!')
       await storage.disableCronJob(job.id)
 
       const shouldRun = await service.checkCronJob(job.id)
@@ -269,15 +271,15 @@ describe('CronService', () => {
 
     it('should check at specific reference date', async () => {
       // Create a job that runs at 3 AM
-      const job = await service.createCronJob('job1', 'session1', '0 3 * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '0 3 * * *', 'UTC', 'Hello!')
 
-      // Check at 3:00 AM - should match
-      const at3AM = new Date('2024-01-15T03:00:00')
+      // Check at 3:00 AM UTC - should match
+      const at3AM = new Date('2024-01-15T03:00:00Z')
       const shouldRunAt3AM = await service.checkCronJob(job.id, at3AM)
       expect(shouldRunAt3AM).toBe(true)
 
-      // Check at 4:00 AM - should not match
-      const at4AM = new Date('2024-01-15T04:00:00')
+      // Check at 4:00 AM UTC - should not match
+      const at4AM = new Date('2024-01-15T04:00:00Z')
       const shouldRunAt4AM = await service.checkCronJob(job.id, at4AM)
       expect(shouldRunAt4AM).toBe(false)
     })
@@ -320,7 +322,7 @@ describe('CronService', () => {
     })
 
     it('should return cron request by id', async () => {
-      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Hello!')
+      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       const retrieved = await service.getCronRequestById(request.id)
 
@@ -340,7 +342,7 @@ describe('CronService', () => {
     })
 
     it('should approve a pending cron request', async () => {
-      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Hello!')
+      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       const approved = await service.approveCronRequest(request.id, 'reviewer1', 'Looks good')
 
@@ -354,7 +356,7 @@ describe('CronService', () => {
     })
 
     it('should throw error when request is not pending', async () => {
-      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Hello!')
+      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
       await service.approveCronRequest(request.id, 'reviewer1')
 
       await expect(service.approveCronRequest(request.id, 'reviewer2')).rejects.toThrow('Cannot approve cron request')
@@ -367,7 +369,7 @@ describe('CronService', () => {
     })
 
     it('should reject a pending cron request', async () => {
-      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Hello!')
+      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       const rejected = await service.rejectCronRequest(request.id, 'reviewer1', 'Invalid schedule')
 
@@ -381,7 +383,7 @@ describe('CronService', () => {
     })
 
     it('should throw error when request is not pending', async () => {
-      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Hello!')
+      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
       await service.rejectCronRequest(request.id, 'reviewer1')
 
       await expect(service.rejectCronRequest(request.id, 'reviewer2')).rejects.toThrow('Cannot reject cron request')
@@ -394,7 +396,7 @@ describe('CronService', () => {
     })
 
     it('should delete an existing cron request', async () => {
-      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', null, 'Hello!')
+      const request = await service.createCronRequest('req1', 'session1', '0 0 * * *', 'UTC', 'Hello!')
 
       await service.deleteCronRequest(request.id)
 
@@ -415,11 +417,11 @@ describe('CronService', () => {
 
     it('should return all active cron jobs that should run this minute', async () => {
       // Create jobs that run every minute
-      await service.createCronJob('job1', 'session1', '* * * * *', null, 'Hello 1!')
-      await service.createCronJob('job2', 'session2', '* * * * *', null, 'Hello 2!')
+      await service.createCronJob('job1', 'session1', '* * * * *', 'UTC', 'Hello 1!')
+      await service.createCronJob('job2', 'session2', '* * * * *', 'UTC', 'Hello 2!')
 
       // Create a job that runs at a specific time (should not be active now)
-      await service.createCronJob('job3', 'session1', '0 3 * * *', null, 'Hello 3!')
+      await service.createCronJob('job3', 'session1', '0 3 * * *', 'UTC', 'Hello 3!')
 
       const activeJobs = await service.getActiveCronJobs()
 
@@ -429,7 +431,7 @@ describe('CronService', () => {
     })
 
     it('should not include disabled cron jobs', async () => {
-      const job = await service.createCronJob('job1', 'session1', '* * * * *', null, 'Hello!')
+      const job = await service.createCronJob('job1', 'session1', '* * * * *', 'UTC', 'Hello!')
       await storage.disableCronJob(job.id)
 
       const activeJobs = await service.getActiveCronJobs()
@@ -440,7 +442,7 @@ describe('CronService', () => {
     it('should return empty array when no jobs are active', async () => {
       await storage.createSession('session1', 'agent1')
       // Create a job that runs at a specific time (not now)
-      await service.createCronJob('job1', 'session1', '0 3 * * *', null, 'Hello!')
+      await service.createCronJob('job1', 'session1', '0 3 * * *', 'UTC', 'Hello!')
 
       const activeJobs = await service.getActiveCronJobs()
 
@@ -449,11 +451,11 @@ describe('CronService', () => {
 
     it('should check at specific reference date', async () => {
       // Create jobs that run at 3 AM
-      await service.createCronJob('job1', 'session1', '0 3 * * *', null, 'Hello 1!')
-      await service.createCronJob('job2', 'session2', '0 4 * * *', null, 'Hello 2!') // Different time
+      await service.createCronJob('job1', 'session1', '0 3 * * *', 'UTC', 'Hello 1!')
+      await service.createCronJob('job2', 'session2', '0 4 * * *', 'UTC', 'Hello 2!') // Different time
 
-      // Check at 3:00 AM
-      const at3AM = new Date('2024-01-15T03:00:00')
+      // Check at 3:00 AM UTC
+      const at3AM = new Date('2024-01-15T03:00:00Z')
       const activeJobs = await service.getActiveCronJobs(at3AM)
 
       expect(activeJobs).toHaveLength(1)

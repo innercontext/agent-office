@@ -65,7 +65,7 @@ export class CronService {
     name: string,
     coworkerName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronJobRow> {
     // Verify coworker exists
@@ -131,7 +131,7 @@ export class CronService {
     name: string,
     coworkerName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronRequestRow> {
     // Verify coworker exists

@@ -149,7 +149,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should enable and disable cron jobs', async () => {
-      const job = await storage.createCronJob('job1', 'test', '0 0 * * *', null, 'Hello!')
+      const job = await storage.createCronJob('job1', 'test', '0 0 * * *', 'UTC', 'Hello!')
 
       await storage.disableCronJob(job.id)
       let retrieved = await storage.getCronJobById(job.id)
@@ -161,7 +161,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should delete cron jobs', async () => {
-      const job = await storage.createCronJob('job1', 'test', '0 0 * * *', null, 'Hello!')
+      const job = await storage.createCronJob('job1', 'test', '0 0 * * *', 'UTC', 'Hello!')
 
       await storage.deleteCronJob(job.id)
 
@@ -170,7 +170,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should check cron job existence', async () => {
-      await storage.createCronJob('job1', 'test', '0 0 * * *', null, 'Hello!')
+      await storage.createCronJob('job1', 'test', '0 0 * * *', 'UTC', 'Hello!')
 
       expect(await storage.cronJobExistsForSession('job1', 'test')).toBe(true)
       expect(await storage.cronJobExistsForSession('job2', 'test')).toBe(false)
@@ -183,7 +183,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should create and list cron history', async () => {
-      const job = await storage.createCronJob('job1', 'test', '0 0 * * *', null, 'Hello!')
+      const job = await storage.createCronJob('job1', 'test', '0 0 * * *', 'UTC', 'Hello!')
 
       await storage.createCronHistory(job.id, new Date(), true)
       await storage.createCronHistory(job.id, new Date(), false, 'Error occurred')
@@ -209,7 +209,7 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should update request status', async () => {
-      const request = await storage.createCronRequest('req1', 'test', '0 0 * * *', null, 'Hello!')
+      const request = await storage.createCronRequest('req1', 'test', '0 0 * * *', 'UTC', 'Hello!')
 
       await storage.updateCronRequestStatus(request.id, 'approved', 'reviewer1', 'Looks good')
 
@@ -220,9 +220,9 @@ describe('MockAgentOfficeStorage', () => {
     })
 
     it('should filter requests by status', async () => {
-      const req1 = await storage.createCronRequest('req1', 'test', '0 0 * * *', null, 'Hello!')
+      const req1 = await storage.createCronRequest('req1', 'test', '0 0 * * *', 'UTC', 'Hello!')
       await storage.updateCronRequestStatus(req1.id, 'approved', 'reviewer1')
-      await storage.createCronRequest('req2', 'test', '0 12 * * *', null, 'World!')
+      await storage.createCronRequest('req2', 'test', '0 12 * * *', 'UTC', 'World!')
 
       const pending = await storage.listCronRequests({ status: 'pending' })
       expect(pending).toHaveLength(1)

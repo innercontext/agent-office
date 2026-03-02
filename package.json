@@ -1,6 +1,6 @@
 {
   "name": "agent-office",
-  "version": "0.6.21",
+  "version": "0.6.22",
   "description": "A multi-agent office management system CLI",
   "type": "module",
   "main": "./dist/index.js",

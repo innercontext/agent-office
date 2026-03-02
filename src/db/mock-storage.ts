@@ -283,7 +283,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronJobRow> {
     const cronJob: CronJobRow = {
@@ -374,7 +374,7 @@ export class MockAgentOfficeStorage implements AgentOfficeStorage {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronRequestRow> {
     const request: CronRequestRow = {

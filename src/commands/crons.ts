@@ -45,11 +45,11 @@ export async function requestCron(
   coworkerName: string,
   schedule: string,
   message: string,
-  timezone: string | undefined,
+  timezone: string,
   useJson: boolean
 ): Promise<void> {
   const service = new CronService(storage)
-  const request = await service.createCronRequest(name, coworkerName, schedule, timezone ?? null, message)
+  const request = await service.createCronRequest(name, coworkerName, schedule, timezone, message)
   console.log(formatOutput(request, useJson))
 }
 
@@ -59,11 +59,11 @@ export async function createCron(
   coworkerName: string,
   schedule: string,
   message: string,
-  timezone: string | undefined,
+  timezone: string,
   useJson: boolean
 ): Promise<void> {
   const service = new CronService(storage)
-  const job = await service.createCronJob(name, coworkerName, schedule, timezone ?? null, message)
+  const job = await service.createCronJob(name, coworkerName, schedule, timezone, message)
   console.log(formatOutput(job, useJson))
 }
 
@@ -98,10 +98,11 @@ export async function listActiveCronJobs(
   // Filter by coworker
   activeJobs = activeJobs.filter(job => job.session_name === coworkerName)
 
-  // Map to only return id and action (message)
+  // Map to return id, action (message), and timezone
   const actions = activeJobs.map(job => ({
     id: job.id,
     action: job.message,
+    timezone: job.timezone,
   }))
 
   console.log(formatOutput(actions, useJson))

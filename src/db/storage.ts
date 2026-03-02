@@ -76,7 +76,7 @@ export interface AgentOfficeStorage {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronJobRow>
   deleteCronJob(id: number): Promise<void>
@@ -96,7 +96,7 @@ export interface AgentOfficeStorage {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronRequestRow>
   updateCronRequestStatus(

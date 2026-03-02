@@ -449,7 +449,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronJobRow> {
     const stmt = this.db.prepare(`
@@ -580,7 +580,7 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronRequestRow> {
     const stmt = this.db.prepare(`

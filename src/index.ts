@@ -289,7 +289,7 @@ program
     '-N, --notify <instructions>',
     'Instructions on who to notify when complete (can be names or descriptions)'
   )
-  .option('-z, --timezone <timezone>', 'Timezone (optional)')
+  .requiredOption('-z, --timezone <timezone>', 'Timezone')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
@@ -321,7 +321,7 @@ program
     '-N, --notify <instructions>',
     'Instructions on who to notify when complete (can be names or descriptions)'
   )
-  .option('-z, --timezone <timezone>', 'Timezone (optional)')
+  .requiredOption('-z, --timezone <timezone>', 'Timezone')
   .action(async (options, command) => {
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()

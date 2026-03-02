@@ -298,7 +298,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronJobRow> {
     const [row] = await this.sql<CronJobRow[]>`
@@ -401,7 +401,7 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     name: string,
     sessionName: string,
     schedule: string,
-    timezone: string | null,
+    timezone: string,
     message: string
   ): Promise<CronRequestRow> {
     const [row] = await this.sql<CronRequestRow[]>`
