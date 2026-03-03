@@ -5,7 +5,7 @@ import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { listCoworkers, getCoworkerInfo, updateCoworker, createSession, deleteCoworker } from './commands/sessions.js'
-import { sendMessage, checkUnreadMail, getUnreadMail, listMessagesBetween } from './commands/messages.js'
+import { sendMessage, checkUnreadMail, getUnreadMail, listMessagesBetween, listMessagesToNotify, markMessagesAsNotified } from './commands/messages.js'
 import {
   listCrons,
   deleteCron,
@@ -196,6 +196,29 @@ program
     const useJson = command.optsWithGlobals().json
     const storage = await getStorage()
     await listMessagesBetween(storage, options.coworker1, options.coworker2, options.start, options.end, useJson)
+    await storage.close()
+  })
+
+program
+  .command('list-messages-to-notify')
+  .description('List unread messages older than specified hours that have not been notified')
+  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
+  .requiredOption('-H, --hours <hours>', 'Hours threshold for message age', parseFloat)
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await listMessagesToNotify(storage, options.coworker, options.hours, useJson)
+    await storage.close()
+  })
+
+program
+  .command('mark-messages-as-notified')
+  .description('Mark specific messages as notified')
+  .requiredOption('-i, --ids <ids...>', 'Message IDs to mark', (value) => value.split(',').map(Number))
+  .action(async (options, command) => {
+    const useJson = command.optsWithGlobals().json
+    const storage = await getStorage()
+    await markMessagesAsNotified(storage, options.ids, useJson)
     await storage.close()
   })
 

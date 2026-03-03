@@ -66,3 +66,26 @@ export async function listMessagesBetween(
   const messages = await service.listMessagesBetween(coworker1, coworker2, startTime, endTime)
   console.log(formatOutput(messages, useJson))
 }
+
+export async function listMessagesToNotify(
+  storage: AgentOfficeStorage,
+  coworkerName: string,
+  hours: number,
+  useJson: boolean
+): Promise<void> {
+  const messages = await storage.listMessagesForRecipient(coworkerName, {
+    unread: true,
+    olderThanHours: hours,
+    notified: false,
+  })
+  console.log(formatOutput(messages, useJson))
+}
+
+export async function markMessagesAsNotified(
+  storage: AgentOfficeStorage,
+  ids: number[],
+  useJson: boolean
+): Promise<void> {
+  await storage.markMessagesAsNotified(ids)
+  console.log(formatOutput({ success: true, count: ids.length }, useJson))
+}
