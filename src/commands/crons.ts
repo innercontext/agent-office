@@ -1,42 +1,31 @@
 import { AgentOfficeStorage } from '../db/index.js'
 import { CronService } from '../services/index.js'
-import { formatOutput } from '../lib/output.js'
 
-export async function listCrons(storage: AgentOfficeStorage, coworkerName: string, useJson: boolean): Promise<void> {
+export async function listCrons(storage: AgentOfficeStorage, coworkerName: string): Promise<unknown> {
   const service = new CronService(storage)
-  const crons = await service.listCronJobsForSession(coworkerName)
-  console.log(formatOutput(crons, useJson))
+  return await service.listCronJobsForSession(coworkerName)
 }
 
-export async function deleteCron(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function deleteCron(storage: AgentOfficeStorage, id: number): Promise<void> {
   const service = new CronService(storage)
   await service.deleteCronJob(id)
-  console.log(formatOutput({ success: true, deleted: id }, useJson))
 }
 
-export async function enableCron(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function enableCron(storage: AgentOfficeStorage, id: number): Promise<unknown> {
   const service = new CronService(storage)
   await service.enableCronJob(id)
-  const job = await service.getCronJobById(id)
-  console.log(formatOutput(job, useJson))
+  return await service.getCronJobById(id)
 }
 
-export async function disableCron(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function disableCron(storage: AgentOfficeStorage, id: number): Promise<unknown> {
   const service = new CronService(storage)
   await service.disableCronJob(id)
-  const job = await service.getCronJobById(id)
-  console.log(formatOutput(job, useJson))
+  return await service.getCronJobById(id)
 }
 
-export async function cronHistory(
-  storage: AgentOfficeStorage,
-  id: number,
-  limit: number,
-  useJson: boolean
-): Promise<void> {
+export async function cronHistory(storage: AgentOfficeStorage, id: number, limit: number): Promise<unknown> {
   const service = new CronService(storage)
-  const history = await service.getCronHistory(id, limit)
-  console.log(formatOutput(history, useJson))
+  return await service.getCronHistory(id, limit)
 }
 
 export async function requestCron(
@@ -45,12 +34,10 @@ export async function requestCron(
   coworkerName: string,
   schedule: string,
   message: string,
-  timezone: string,
-  useJson: boolean
-): Promise<void> {
+  timezone: string
+): Promise<unknown> {
   const service = new CronService(storage)
-  const request = await service.createCronRequest(name, coworkerName, schedule, timezone, message)
-  console.log(formatOutput(request, useJson))
+  return await service.createCronRequest(name, coworkerName, schedule, timezone, message)
 }
 
 export async function createCron(
@@ -59,19 +46,13 @@ export async function createCron(
   coworkerName: string,
   schedule: string,
   message: string,
-  timezone: string,
-  useJson: boolean
-): Promise<void> {
+  timezone: string
+): Promise<unknown> {
   const service = new CronService(storage)
-  const job = await service.createCronJob(name, coworkerName, schedule, timezone, message)
-  console.log(formatOutput(job, useJson))
+  return await service.createCronJob(name, coworkerName, schedule, timezone, message)
 }
 
-export async function checkCronJobs(
-  storage: AgentOfficeStorage,
-  coworkerName: string,
-  useJson: boolean
-): Promise<void> {
+export async function checkCronJobs(storage: AgentOfficeStorage, coworkerName: string): Promise<unknown> {
   const service = new CronService(storage)
   const activeJobs = await service.getActiveCronJobs()
 
@@ -79,19 +60,13 @@ export async function checkCronJobs(
   const coworkerJobs = activeJobs.filter(job => job.session_name === coworkerName)
 
   // Return count similar to check-unread-messages
-  const result = {
+  return {
     hasActive: coworkerJobs.length > 0,
     count: coworkerJobs.length,
   }
-
-  console.log(formatOutput(result, useJson))
 }
 
-export async function listActiveCronJobs(
-  storage: AgentOfficeStorage,
-  coworkerName: string,
-  useJson: boolean
-): Promise<void> {
+export async function listActiveCronJobs(storage: AgentOfficeStorage, coworkerName: string): Promise<unknown> {
   const service = new CronService(storage)
   let activeJobs = await service.getActiveCronJobs()
 
@@ -99,11 +74,9 @@ export async function listActiveCronJobs(
   activeJobs = activeJobs.filter(job => job.session_name === coworkerName)
 
   // Map to return id, action (message), and timezone
-  const actions = activeJobs.map(job => ({
+  return activeJobs.map(job => ({
     id: job.id,
     action: job.message,
     timezone: job.timezone,
   }))
-
-  console.log(formatOutput(actions, useJson))
 }

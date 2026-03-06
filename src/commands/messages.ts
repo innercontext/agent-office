@@ -1,24 +1,17 @@
 import { AgentOfficeStorage } from '../db/index.js'
 import { MessageService } from '../services/index.js'
-import { formatOutput } from '../lib/output.js'
 
 export async function sendMessage(
   storage: AgentOfficeStorage,
   from: string,
   recipients: string[],
-  body: string,
-  useJson: boolean
-): Promise<void> {
+  body: string
+): Promise<unknown> {
   const service = new MessageService(storage)
-  const messages = await service.sendMessage(from, recipients, body)
-  console.log(formatOutput(messages, useJson))
+  return await service.sendMessage(from, recipients, body)
 }
 
-export async function checkUnreadMail(
-  storage: AgentOfficeStorage,
-  coworkerName: string,
-  useJson: boolean
-): Promise<void> {
+export async function checkUnreadMail(storage: AgentOfficeStorage, coworkerName: string): Promise<unknown> {
   const service = new MessageService(storage)
   const unreadCounts = await service.countUnreadBySender(coworkerName)
 
@@ -33,23 +26,16 @@ export async function checkUnreadMail(
   }
 
   // Unix philosophy: return 0 on success, include both backward-compatible hasUnread and new counts
-  const result = {
+  return {
     hasUnread: totalUnread > 0,
     total: totalUnread,
     counts: counts,
   }
-
-  console.log(formatOutput(result, useJson))
 }
 
-export async function getUnreadMail(
-  storage: AgentOfficeStorage,
-  coworkerName: string,
-  useJson: boolean
-): Promise<void> {
+export async function getUnreadMail(storage: AgentOfficeStorage, coworkerName: string): Promise<unknown> {
   const service = new MessageService(storage)
-  const messages = await service.getUnreadMail(coworkerName)
-  console.log(formatOutput(messages, useJson))
+  return await service.getUnreadMail(coworkerName)
 }
 
 export async function listMessagesBetween(
@@ -57,35 +43,26 @@ export async function listMessagesBetween(
   coworker1: string,
   coworker2: string,
   startTimeIso: string | undefined,
-  endTimeIso: string | undefined,
-  useJson: boolean
-): Promise<void> {
+  endTimeIso: string | undefined
+): Promise<unknown> {
   const service = new MessageService(storage)
   const startTime = startTimeIso ? new Date(startTimeIso) : undefined
   const endTime = endTimeIso ? new Date(endTimeIso) : undefined
-  const messages = await service.listMessagesBetween(coworker1, coworker2, startTime, endTime)
-  console.log(formatOutput(messages, useJson))
+  return await service.listMessagesBetween(coworker1, coworker2, startTime, endTime)
 }
 
 export async function listMessagesToNotify(
   storage: AgentOfficeStorage,
   coworkerName: string,
-  hours: number,
-  useJson: boolean
-): Promise<void> {
-  const messages = await storage.listMessagesForRecipient(coworkerName, {
+  hours: number
+): Promise<unknown> {
+  return await storage.listMessagesForRecipient(coworkerName, {
     unread: true,
     olderThanHours: hours,
     notified: false,
   })
-  console.log(formatOutput(messages, useJson))
 }
 
-export async function markMessagesAsNotified(
-  storage: AgentOfficeStorage,
-  ids: number[],
-  useJson: boolean
-): Promise<void> {
+export async function markMessagesAsNotified(storage: AgentOfficeStorage, ids: number[]): Promise<void> {
   await storage.markMessagesAsNotified(ids)
-  console.log(formatOutput({ success: true, count: ids.length }, useJson))
 }

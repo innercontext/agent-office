@@ -9,9 +9,12 @@ A multi-agent office management system CLI for coordinating AI coworkers, messag
 - **Cron Jobs**: Schedule automated messages with cron expressions (with optional approval workflow)
 - **Task Board**: Kanban-style task management with columns, assignments, and dependencies
 - **TOON Format**: All output encoded in TOON (Token-Oriented Object Notation) by default for compact, LLM-friendly output
-- **JSON Option**: Use `--json` flag for traditional JSON output
+- **JSON Output**: Use `--output json` or `AGENT_OFFICE_OUTPUT_FORMAT` env var for JSON
+- **JSON Input**: Use `--json '{"key": "value"}'` for full JSON payloads instead of individual flags
+- **Schema Introspection**: Use `schema` or `describe` commands for runtime command discovery
 - **Multiple Storage Backends**: SQLite or PostgreSQL support
-- **Comprehensive Testing**: 148 tests with full coverage
+- **MCP Server**: Run as Model Context Protocol server with `agent-office mcp`
+- **Comprehensive Testing**: 154 tests with full coverage
 
 ## Installation
 
@@ -57,7 +60,10 @@ npm run build
 
 - `--sqlite <path>` - SQLite database file path (env: `AGENT_OFFICE_SQLITE`)
 - `--postgresql <url>` - PostgreSQL connection URL (env: `AGENT_OFFICE_POSTGRESQL`)
-- `--json` - Output in JSON format instead of TOON (default: false)
+- `--output <format>` - Output format: `json`, `ndjson`, `toon`, or `auto` (env: `AGENT_OFFICE_OUTPUT_FORMAT`)
+- `--fields <fields>` - Comma-separated list of fields to include in output
+- `--dry-run` - Validate commands without executing mutating operations
+- `--json <payload>` - Full JSON payload to replace individual flags (per-command)
 - `-V, --version` - Show version
 - `-h, --help` - Show help
 
@@ -74,12 +80,12 @@ $ npx agent-office --sqlite ./data.db list-coworkers
   Bob,gpt-4,available,null,2024-01-15T10:25:00.000Z
 ```
 
-### JSON
+### JSON Output
 
-Use `--json` flag anywhere in the command for traditional JSON output:
+Use `--output json` or set `AGENT_OFFICE_OUTPUT_FORMAT=json` for traditional JSON output:
 
 ```bash
-$ npx agent-office --sqlite ./data.db --json list-coworkers
+$ npx agent-office --sqlite ./data.db --output json list-coworkers
 [
   {
     "name": "Alice",
@@ -89,6 +95,81 @@ $ npx agent-office --sqlite ./data.db --json list-coworkers
     "created_at": "2024-01-15T10:30:00.000Z"
   }
 ]
+```
+
+### JSON Input (Agent-First)
+
+Pass full JSON payloads instead of individual flags. This is the **agent-first** approach recommended for AI agents:
+
+```bash
+$ npx agent-office --sqlite ./data.db create-coworker --json '{"name": "Alice", "coworkerType": "assistant"}'
+```
+
+### NDJSON
+
+For streaming large datasets, use NDJSON format:
+
+```bash
+$ npx agent-office --sqlite ./data.db --output ndjson list-coworkers
+```
+
+## Schema Introspection
+
+Query the CLI itself for available commands and their parameters. This eliminates the need for agents to "google the docs":
+
+```bash
+# List all commands
+$ npx agent-office schema
+
+# Show schema for specific command
+$ npx agent-office schema create-coworker
+
+# Alias: describe
+$ npx agent-office describe
+```
+
+## Field Filtering (Context Window Discipline)
+
+Limit response fields to protect your context window:
+
+```bash
+$ npx agent-office --sqlite ./data.db list-coworkers --fields name,status
+```
+
+## Dry-Run Mode
+
+Validate mutating commands without executing:
+
+```bash
+$ npx agent-office --sqlite ./data.db delete-coworker --name Alice --dry-run
+[DRY-RUN] Would execute: delete-coworker
+```
+
+## MCP Server (Model Context Protocol)
+
+Run as an MCP server for JSON-RPC tool access:
+
+```bash
+$ npx agent-office mcp
+# Then send JSON-RPC messages via stdin
+```
+
+## Agent Skills & Documentation
+
+The CLI ships with markdown-based skill files that provide agent-specific guidance:
+
+```bash
+# List available skills
+$ npx agent-office list-skills
+
+# View a specific skill
+$ npx agent-office get-skill --name create-coworker
+
+# View context window discipline guidelines
+$ npx agent-office context
+
+# View agent security guidelines
+$ npx agent-office agents
 ```
 
 ## Commands

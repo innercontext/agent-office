@@ -1,17 +1,14 @@
 import { AgentOfficeStorage } from '../db/index.js'
 import { SessionService } from '../services/index.js'
-import { formatOutput } from '../lib/output.js'
 
-export async function listCoworkers(storage: AgentOfficeStorage, useJson: boolean): Promise<void> {
+export async function listCoworkers(storage: AgentOfficeStorage): Promise<unknown> {
   const service = new SessionService(storage)
-  const coworkers = await service.listCoworkers()
-  console.log(formatOutput(coworkers, useJson))
+  return await service.listCoworkers()
 }
 
-export async function getCoworkerInfo(storage: AgentOfficeStorage, name: string, useJson: boolean): Promise<void> {
+export async function getCoworkerInfo(storage: AgentOfficeStorage, name: string): Promise<unknown> {
   const service = new SessionService(storage)
-  const coworker = await service.getCoworkerInfo(name)
-  console.log(formatOutput(coworker, useJson))
+  return await service.getCoworkerInfo(name)
 }
 
 export async function updateCoworker(
@@ -23,9 +20,8 @@ export async function updateCoworker(
     description?: string | null
     philosophy?: string | null
     visualDescription?: string | null
-  },
-  useJson: boolean
-): Promise<void> {
+  }
+): Promise<unknown> {
   const service = new SessionService(storage)
   await service.updateCoworker(name, {
     ...(updates.coworkerType !== undefined && updates.coworkerType !== null
@@ -36,23 +32,16 @@ export async function updateCoworker(
     philosophy: updates.philosophy,
     visual_description: updates.visualDescription,
   })
-  // Fetch and display the updated coworker info in user-friendly format
-  const coworker = await service.getCoworkerInfo(name)
-  console.log(formatOutput(coworker, useJson))
+  // Return the updated coworker info
+  return await service.getCoworkerInfo(name)
 }
 
-export async function createSession(
-  storage: AgentOfficeStorage,
-  name: string,
-  coworkerType: string,
-  useJson: boolean
-): Promise<void> {
+export async function createSession(storage: AgentOfficeStorage, name: string, coworkerType: string): Promise<unknown> {
   const service = new SessionService(storage)
-  const session = await service.createSession(name, coworkerType)
-  console.log(formatOutput(session, useJson))
+  return await service.createSession(name, coworkerType)
 }
 
-export async function deleteCoworker(storage: AgentOfficeStorage, name: string, useJson: boolean): Promise<void> {
+export async function deleteCoworker(storage: AgentOfficeStorage, name: string): Promise<void> {
   const service = new SessionService(storage)
   const session = await service.getSessionByName(name)
   if (!session) {
@@ -84,6 +73,4 @@ export async function deleteCoworker(storage: AgentOfficeStorage, name: string, 
     // Finally, delete the coworker session
     await tx.deleteSession(session.id)
   })
-
-  console.log(formatOutput({ success: true, message: `Coworker ${name} deleted` }, useJson))
 }

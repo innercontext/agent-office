@@ -1,6 +1,5 @@
 import { AgentOfficeStorage } from '../db/index.js'
 import { TaskService } from '../services/index.js'
-import { formatOutput } from '../lib/output.js'
 
 export async function addTask(
   storage: AgentOfficeStorage,
@@ -8,21 +7,18 @@ export async function addTask(
   description: string,
   assignee: string | null,
   column: string,
-  dependencies: number[],
-  useJson: boolean
-): Promise<void> {
+  dependencies: number[]
+): Promise<unknown> {
   const service = new TaskService(storage)
-  const task = await service.createTask(title, description, assignee, column, dependencies)
-  console.log(formatOutput(task, useJson))
+  return await service.createTask(title, description, assignee, column, dependencies)
 }
 
 export async function listTasks(
   storage: AgentOfficeStorage,
   assignee: string | undefined,
   column: string | undefined,
-  search: string | undefined,
-  useJson: boolean
-): Promise<void> {
+  search: string | undefined
+): Promise<unknown> {
   const service = new TaskService(storage)
 
   // If any filters are provided, use searchTasks with filters
@@ -31,22 +27,20 @@ export async function listTasks(
     if (assignee) filters.assignee = assignee
     if (column) filters.column = column
 
-    const tasks = await service.searchTasks(search || '', filters)
-    console.log(formatOutput(tasks, useJson))
+    return await service.searchTasks(search || '', filters)
   } else {
     // No filters, list all tasks
-    const tasks = await service.listTasks()
-    console.log(formatOutput(tasks, useJson))
+    return await service.listTasks()
   }
 }
 
-export async function getTask(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function getTask(storage: AgentOfficeStorage, id: number): Promise<unknown> {
   const service = new TaskService(storage)
   const task = await service.getTaskById(id)
   if (!task) {
     throw new Error(`Task ${id} not found`)
   }
-  console.log(formatOutput(task, useJson))
+  return task
 }
 
 export async function updateTask(
@@ -56,9 +50,8 @@ export async function updateTask(
   description: string | undefined,
   assignee: string | undefined,
   column: string | undefined,
-  dependencies: number[] | undefined,
-  useJson: boolean
-): Promise<void> {
+  dependencies: number[] | undefined
+): Promise<unknown> {
   const service = new TaskService(storage)
   const updates: any = {}
   if (title !== undefined) updates.title = title
@@ -67,52 +60,35 @@ export async function updateTask(
   if (column !== undefined) updates.column = column
   if (dependencies !== undefined) updates.dependencies = dependencies
 
-  const task = await service.updateTask(id, updates)
-  console.log(formatOutput(task, useJson))
+  return await service.updateTask(id, updates)
 }
 
-export async function deleteTask(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function deleteTask(storage: AgentOfficeStorage, id: number): Promise<void> {
   const service = new TaskService(storage)
   await service.deleteTask(id)
-  console.log(formatOutput({ success: true, deleted: id }, useJson))
 }
 
-export async function assignTask(
-  storage: AgentOfficeStorage,
-  id: number,
-  assignee: string,
-  useJson: boolean
-): Promise<void> {
+export async function assignTask(storage: AgentOfficeStorage, id: number, assignee: string): Promise<unknown> {
   const service = new TaskService(storage)
-  const task = await service.assignTask(id, assignee)
-  console.log(formatOutput(task, useJson))
+  return await service.assignTask(id, assignee)
 }
 
-export async function unassignTask(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function unassignTask(storage: AgentOfficeStorage, id: number): Promise<unknown> {
   const service = new TaskService(storage)
-  const task = await service.unassignTask(id)
-  console.log(formatOutput(task, useJson))
+  return await service.unassignTask(id)
 }
 
-export async function moveTask(
-  storage: AgentOfficeStorage,
-  id: number,
-  column: string,
-  useJson: boolean
-): Promise<void> {
+export async function moveTask(storage: AgentOfficeStorage, id: number, column: string): Promise<unknown> {
   const service = new TaskService(storage)
-  const task = await service.moveTask(id, column)
-  console.log(formatOutput(task, useJson))
+  return await service.moveTask(id, column)
 }
 
-export async function taskStats(storage: AgentOfficeStorage, useJson: boolean): Promise<void> {
+export async function taskStats(storage: AgentOfficeStorage): Promise<unknown> {
   const service = new TaskService(storage)
-  const stats = await service.getColumnStats()
-  console.log(formatOutput(stats, useJson))
+  return await service.getColumnStats()
 }
 
-export async function getTaskHistory(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function getTaskHistory(storage: AgentOfficeStorage, id: number): Promise<unknown> {
   const service = new TaskService(storage)
-  const history = await service.getTaskHistory(id)
-  console.log(formatOutput(history, useJson))
+  return await service.getTaskHistory(id)
 }

@@ -1,48 +1,41 @@
 import { AgentOfficeStorage } from '../db/index.js'
 import { CronService } from '../services/index.js'
-import { formatOutput } from '../lib/output.js'
 
-export async function listCronRequests(storage: AgentOfficeStorage, useJson: boolean): Promise<void> {
+export async function listCronRequests(storage: AgentOfficeStorage): Promise<unknown> {
   const service = new CronService(storage)
-  const requests = await service.listCronRequests()
-  console.log(formatOutput(requests, useJson))
+  return await service.listCronRequests()
 }
 
-export async function getCronRequest(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function getCronRequest(storage: AgentOfficeStorage, id: number): Promise<unknown> {
   const service = new CronService(storage)
   const request = await service.getCronRequestById(id)
   if (!request) {
     throw new Error(`Cron request ${id} not found`)
   }
-  console.log(formatOutput(request, useJson))
+  return request
 }
 
 export async function approveCronRequest(
   storage: AgentOfficeStorage,
   id: number,
   reviewedBy: string,
-  reviewerNotes: string | undefined,
-  useJson: boolean
-): Promise<void> {
+  reviewerNotes: string | undefined
+): Promise<unknown> {
   const service = new CronService(storage)
-  const request = await service.approveCronRequest(id, reviewedBy, reviewerNotes)
-  console.log(formatOutput(request, useJson))
+  return await service.approveCronRequest(id, reviewedBy, reviewerNotes)
 }
 
 export async function rejectCronRequest(
   storage: AgentOfficeStorage,
   id: number,
   reviewedBy: string,
-  reviewerNotes: string | undefined,
-  useJson: boolean
-): Promise<void> {
+  reviewerNotes: string | undefined
+): Promise<unknown> {
   const service = new CronService(storage)
-  const request = await service.rejectCronRequest(id, reviewedBy, reviewerNotes)
-  console.log(formatOutput(request, useJson))
+  return await service.rejectCronRequest(id, reviewedBy, reviewerNotes)
 }
 
-export async function deleteCronRequest(storage: AgentOfficeStorage, id: number, useJson: boolean): Promise<void> {
+export async function deleteCronRequest(storage: AgentOfficeStorage, id: number): Promise<void> {
   const service = new CronService(storage)
   await service.deleteCronRequest(id)
-  console.log(formatOutput({ success: true, deleted: id }, useJson))
 }
