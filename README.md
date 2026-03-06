@@ -141,8 +141,11 @@ $ npx agent-office --sqlite ./data.db list-coworkers --fields name,status
 Validate mutating commands without executing:
 
 ```bash
-$ npx agent-office --sqlite ./data.db delete-coworker --name Alice --dry-run
+$ npx agent-office --sqlite ./data.db delete-coworker \
+  --json '{"name": "Alice"}' \
+  --dry-run
 [DRY-RUN] Would execute: delete-coworker
+params: { name: "Alice" }
 ```
 
 ## MCP Server (Model Context Protocol)
@@ -163,7 +166,7 @@ The CLI ships with markdown-based skill files that provide agent-specific guidan
 $ npx agent-office list-skills
 
 # View a specific skill
-$ npx agent-office get-skill --name create-coworker
+$ npx agent-office get-skill --json '{"name": "create-coworker"}'
 
 # View context window discipline guidelines
 $ npx agent-office context
@@ -173,6 +176,24 @@ $ npx agent-office agents
 ```
 
 ## Commands
+
+All commands accept input via the `--json` flag with a JSON payload. Use the `schema` command to see the exact field requirements for each command.
+
+### Schema Introspection (Discover Commands)
+
+**schema** - Show schema for any command (field names, types, descriptions, required fields)
+
+```bash
+# List all commands
+npx agent-office schema
+
+# Show detailed schema for a command
+npx agent-office schema create-coworker
+# Shows: requestSchema (input fields), responseSchema (output fields), examples
+
+# Alternative: describe
+npx agent-office describe create-coworker
+```
 
 ### Coworker Management
 
@@ -185,35 +206,37 @@ npx agent-office --sqlite ./data.db list-coworkers
 **create-coworker** - Create a new coworker
 
 ```bash
-npx agent-office --sqlite ./data.db create-coworker --name Alice --id alice-001 --agent claude
+npx agent-office --sqlite ./data.db create-coworker \
+  --json '{"name": "Alice", "coworkerType": "developer"}'
+
+# See schema for all available fields
+npx agent-office schema create-coworker
 ```
 
 **get-coworker-info** - Get coworker details
 
 ```bash
-npx agent-office --sqlite ./data.db get-coworker-info --name Alice
+npx agent-office --sqlite ./data.db get-coworker-info \
+  --json '{"name": "Alice"}'
 ```
 
 **update-coworker** - Update coworker information
 
 ```bash
-# Set status
-npx agent-office --sqlite ./data.db update-coworker --name Alice --status busy
+# Update status and description
+npx agent-office --sqlite ./data.db update-coworker \
+  --json '{"name": "Alice", "status": "busy", "description": "Senior AI developer"}'
 
-# Set description and philosophy
-npx agent-office --sqlite ./data.db update-coworker --name Alice \
-  --description "Senior AI developer" \
-  --philosophy "Write clean, maintainable code" \
-  --visual-description "A friendly robot wearing glasses"
-
-# Clear a field (omit the value)
-npx agent-office --sqlite ./data.db update-coworker --name Alice --status
+# Clear fields by setting to null
+npx agent-office --sqlite ./data.db update-coworker \
+  --json '{"name": "Alice", "status": null}'
 ```
 
 **delete-coworker** - Delete a coworker and all their data (messages, cron jobs, cron requests)
 
 ```bash
-npx agent-office --sqlite ./data.db delete-coworker --name Alice
+npx agent-office --sqlite ./data.db delete-coworker \
+  --json '{"name": "Alice"}'
 ```
 
 ### Message Commands
@@ -221,70 +244,88 @@ npx agent-office --sqlite ./data.db delete-coworker --name Alice
 **send-message** - Send a message to one or more recipients
 
 ```bash
-npx agent-office --sqlite ./data.db send-message --from Alice --to Bob Charlie --body "Hello team!"
+npx agent-office --sqlite ./data.db send-message \
+  --json '{"from": "Alice", "to": ["Bob", "Charlie"], "body": "Hello team!"}'
 ```
 
-**check-unread-mail** - Check if there is unread mail for a coworker
+**check-unread-messages** - Check if there are unread messages for a coworker
 
 ```bash
-npx agent-office --sqlite ./data.db check-unread-mail --coworker Bob
-# Output: hasUnread: true
+npx agent-office --sqlite ./data.db check-unread-messages \
+  --json '{"coworker": "Bob"}'
+# Output: {"hasUnread": true, "total": 3}
 ```
 
-**get-unread-mail** - Get all unread mail for a coworker and mark as read
+**get-unread-messages** - Get all unread messages for a coworker and mark as read
 
 ```bash
-npx agent-office --sqlite ./data.db get-unread-mail --coworker Bob
+npx agent-office --sqlite ./data.db get-unread-messages \
+  --json '{"coworker": "Bob"}'
+```
+
+**list-messages-between** - Show all messages between two coworkers
+
+```bash
+npx agent-office --sqlite ./data.db list-messages-between \
+  --json '{"coworker1": "Alice", "coworker2": "Bob"}'
 ```
 
 ### Cron Job Commands
 
-**list-crons** - List all cron jobs
+**list-crons** - List all cron jobs for a specific coworker
 
 ```bash
-npx agent-office --sqlite ./data.db list-crons
+npx agent-office --sqlite ./data.db list-crons \
+  --json '{"coworker": "Alice"}'
 ```
 
 **create-cron** - Create a new cron job directly
 
 ```bash
 npx agent-office --sqlite ./data.db create-cron \
-  --name "Daily Standup" \
-  --coworker Alice \
-  --schedule "0 9 * * *" \
-  --message "Time for daily standup" \
-  --timezone "America/New_York"
+  --json '{
+    "name": "Daily Standup",
+    "coworker": "Alice",
+    "schedule": "0 9 * * *",
+    "task": "Send standup reminder",
+    "notify": "Team lead",
+    "timezone": "America/New_York"
+  }'
 ```
 
 **delete-cron** - Delete a cron job
 
 ```bash
-npx agent-office --sqlite ./data.db delete-cron --id 1
+npx agent-office --sqlite ./data.db delete-cron \
+  --json '{"id": 1}'
 ```
 
 **enable-cron** - Enable a cron job
 
 ```bash
-npx agent-office --sqlite ./data.db enable-cron --id 1
+npx agent-office --sqlite ./data.db enable-cron \
+  --json '{"id": 1}'
 ```
 
 **disable-cron** - Disable a cron job
 
 ```bash
-npx agent-office --sqlite ./data.db disable-cron --id 1
+npx agent-office --sqlite ./data.db disable-cron \
+  --json '{"id": 1}'
 ```
 
 **cron-history** - Get cron job execution history
 
 ```bash
-npx agent-office --sqlite ./data.db cron-history --id 1 --limit 10
+npx agent-office --sqlite ./data.db cron-history \
+  --json '{"id": 1, "limit": 10}'
 ```
 
-**check-cron-job** - Check if a cron job should run this minute
+**check-cron-jobs** - Check if there are active cron jobs for a coworker this minute
 
 ```bash
-npx agent-office --sqlite ./data.db check-cron-job --id 1
-# Output: shouldRun: true
+npx agent-office --sqlite ./data.db check-cron-jobs \
+  --json '{"coworker": "Alice"}'
 ```
 
 ### Cron Request Commands (Approval Workflow)
@@ -299,40 +340,50 @@ npx agent-office --sqlite ./data.db list-cron-requests
 
 ```bash
 npx agent-office --sqlite ./data.db request-cron \
-  --name "Weekly Report" \
-  --coworker Alice \
-  --schedule "0 9 * * 1" \
-  --message "Generate weekly report"
+  --json '{
+    "name": "Weekly Report",
+    "coworker": "Alice",
+    "schedule": "0 9 * * 1",
+    "task": "Generate weekly report",
+    "notify": "Manager",
+    "timezone": "America/New_York"
+  }'
 ```
 
 **get-cron-request** - Get details of a cron request
 
 ```bash
-npx agent-office --sqlite ./data.db get-cron-request --id 1
+npx agent-office --sqlite ./data.db get-cron-request \
+  --json '{"id": 1}'
 ```
 
 **approve-cron-request** - Approve a pending cron request
 
 ```bash
 npx agent-office --sqlite ./data.db approve-cron-request \
-  --id 1 \
-  --reviewer Bob \
-  --notes "Looks good, approved for production"
+  --json '{
+    "id": 1,
+    "reviewer": "Bob",
+    "notes": "Looks good, approved for production"
+  }'
 ```
 
 **reject-cron-request** - Reject a pending cron request
 
 ```bash
 npx agent-office --sqlite ./data.db reject-cron-request \
-  --id 1 \
-  --reviewer Bob \
-  --notes "Please use a different schedule"
+  --json '{
+    "id": 1,
+    "reviewer": "Bob",
+    "notes": "Please use a different schedule"
+  }'
 ```
 
 **delete-cron-request** - Delete a cron request
 
 ```bash
-npx agent-office --sqlite ./data.db delete-cron-request --id 1
+npx agent-office --sqlite ./data.db delete-cron-request \
+  --json '{"id": 1}'
 ```
 
 ### Task Board Commands
@@ -341,63 +392,77 @@ npx agent-office --sqlite ./data.db delete-cron-request --id 1
 
 ```bash
 npx agent-office --sqlite ./data.db list-tasks
-npx agent-office --sqlite ./data.db list-tasks --assignee Alice
-npx agent-office --sqlite ./data.db list-tasks --column "working on"
+npx agent-office --sqlite ./data.db list-tasks \
+  --json '{"assignee": "Alice"}'
+npx agent-office --sqlite ./data.db list-tasks \
+  --json '{"column": "working on"}'
 ```
 
 **add-task** - Create a new task
 
 ```bash
 npx agent-office --sqlite ./data.db add-task \
-  --title "Implement auth" \
-  --description "Add JWT authentication" \
-  --column "idea" \
-  --assignee Alice
+  --json '{
+    "title": "Implement auth",
+    "description": "Add JWT authentication",
+    "column": "idea",
+    "assignee": "Alice"
+  }'
 ```
 
 **get-task** - Get a task by ID
 
 ```bash
-npx agent-office --sqlite ./data.db get-task --id 1
+npx agent-office --sqlite ./data.db get-task \
+  --json '{"id": 1}'
 ```
 
 **update-task** - Update a task
 
 ```bash
 npx agent-office --sqlite ./data.db update-task \
-  --id 1 \
-  --title "Updated title" \
-  --description "Updated description"
+  --json '{"id": 1, "title": "Updated title", "description": "Updated description"}'
 ```
 
 **delete-task** - Delete a task
 
 ```bash
-npx agent-office --sqlite ./data.db delete-task --id 1
+npx agent-office --sqlite ./data.db delete-task \
+  --json '{"id": 1}'
 ```
 
 **assign-task** - Assign a task to someone
 
 ```bash
-npx agent-office --sqlite ./data.db assign-task --id 1 --assignee Bob
+npx agent-office --sqlite ./data.db assign-task \
+  --json '{"id": 1, "assignee": "Bob"}'
 ```
 
 **unassign-task** - Remove assignment from a task
 
 ```bash
-npx agent-office --sqlite ./data.db unassign-task --id 1
+npx agent-office --sqlite ./data.db unassign-task \
+  --json '{"id": 1}'
 ```
 
 **move-task** - Move a task to a different column
 
 ```bash
-npx agent-office --sqlite ./data.db move-task --id 1 --column "ready for review"
+npx agent-office --sqlite ./data.db move-task \
+  --json '{"id": 1, "column": "ready for review"}'
 ```
 
 **task-stats** - Show task statistics by column
 
 ```bash
 npx agent-office --sqlite ./data.db task-stats
+```
+
+**task-history** - Show column transition history for a task
+
+```bash
+npx agent-office --sqlite ./data.db task-history \
+  --json '{"id": 1}'
 ```
 
 **list-task-columns** - List all valid task board columns
