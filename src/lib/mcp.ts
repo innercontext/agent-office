@@ -46,15 +46,23 @@ export class MCPServer {
     const properties: Record<string, unknown> = {}
     const required: string[] = []
 
-    if (schema.options) {
-      for (const option of schema.options) {
-        const flagName = option.flags.split(',')[0].trim().replace(/^-+/, '')
-        properties[flagName] = {
-          type: option.defaultValue !== undefined ? ['string', 'null'] : 'string',
-          description: option.description,
+    // Use requestSchema if available, otherwise empty
+    if (schema.requestSchema) {
+      for (const [fieldName, field] of Object.entries(schema.requestSchema.properties)) {
+        const prop: Record<string, unknown> = {
+          type: field.type,
+          description: field.description,
         }
-        if (option.required) {
-          required.push(flagName)
+
+        if (field.items) {
+          prop.items = { type: field.items.type, description: field.items.description }
+        }
+
+        properties[fieldName] = prop
+
+        // Check if field is required
+        if (schema.requestSchema.required?.includes(fieldName)) {
+          required.push(fieldName)
         }
       }
     }
