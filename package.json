@@ -35,7 +35,10 @@
   "license": "MIT",
   "files": [
     "dist",
-    "README.md"
+    "skills",
+    "README.md",
+    "CONTEXT.md",
+    "AGENTS.md"
   ],
   "dependencies": {
     "@toon-format/toon": "^2.1.0",
