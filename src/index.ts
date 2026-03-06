@@ -185,31 +185,26 @@ program
 program
   .command('create-coworker')
   .description('Create a new coworker (session)')
-  .option('-n, --name <name>', 'Coworker name')
-  .option('-t, --coworker-type <type>', 'Coworker type (e.g., assistant, developer, manager)')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with name and coworkerType')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    // Check for json override first
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.name = rawData.name || options.name
-        options.coworkerType = rawData.coworkerType || rawData.type || options.coworkerType
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
-    }
-
-    // Validate required fields after potential JSON merge
-    if (!options.name) {
-      console.log(formatWithOptions({ error: 'Missing required option: --name' }, opts))
+    // Parse JSON input
+    let data: { name?: string; coworkerType?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
       process.exit(1)
     }
-    if (!options.coworkerType) {
-      console.log(formatWithOptions({ error: 'Missing required option: --coworker-type' }, opts))
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
+    }
+    if (!data.coworkerType) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworkerType' }, opts))
       process.exit(1)
     }
 
@@ -219,7 +214,7 @@ program
           {
             dryRun: true,
             command: 'create-coworker',
-            params: { name: options.name, coworkerType: options.coworkerType },
+            params: { name: data.name, coworkerType: data.coworkerType },
           },
           opts
         )
@@ -228,7 +223,7 @@ program
     }
 
     const storage = await getStorage()
-    const session = await createSession(storage, options.name, options.coworkerType)
+    const session = await createSession(storage, data.name, data.coworkerType)
     console.log(formatWithOptions(session, opts))
     await storage.close()
   })
@@ -236,19 +231,23 @@ program
 program
   .command('delete-coworker')
   .description('Delete a coworker (session)')
-  .requiredOption('-n, --name <name>', 'Coworker name')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with name field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.name = rawData.name || options.name
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { name?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('delete-coworker')) {
@@ -257,7 +256,7 @@ program
           {
             dryRun: true,
             command: 'delete-coworker',
-            params: { name: options.name },
+            params: { name: data.name },
           },
           opts
         )
@@ -266,37 +265,38 @@ program
     }
 
     const storage = await getStorage()
-    await deleteCoworker(storage, options.name)
-    console.log(formatWithOptions({ success: true, message: `Coworker ${options.name} deleted` }, opts))
+    await deleteCoworker(storage, data.name)
+    console.log(formatWithOptions({ success: true, message: `Coworker ${data.name} deleted` }, opts))
     await storage.close()
   })
 
 program
   .command('update-coworker')
   .description("Update a coworker's information (status, description, philosophy, visual description)")
-  .requiredOption('-n, --name <name>', 'Coworker name')
-  .option('-t, --coworker-type <type>', 'Set the coworker type')
-  .option('-s, --status <status>', 'Set the status (omit to clear)')
-  .option('-d, --description <description>', 'Set the description (omit to clear)')
-  .option('-p, --philosophy <philosophy>', 'Set the philosophy (omit to clear)')
-  .option('-v, --visual-description <visual>', 'Set the visual description (omit to clear)')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with name and optional fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.name = rawData.name || options.name
-        if (rawData.coworkerType !== undefined) options.coworkerType = rawData.coworkerType
-        if (rawData.status !== undefined) options.status = rawData.status
-        if (rawData.description !== undefined) options.description = rawData.description
-        if (rawData.philosophy !== undefined) options.philosophy = rawData.philosophy
-        if (rawData.visualDescription !== undefined) options.visualDescription = rawData.visualDescription
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: {
+      name?: string
+      coworkerType?: string | null
+      status?: string | null
+      description?: string | null
+      philosophy?: string | null
+      visualDescription?: string | null
+    }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('update-coworker')) {
@@ -306,12 +306,12 @@ program
             dryRun: true,
             command: 'update-coworker',
             params: {
-              name: options.name,
-              coworkerType: options.coworkerType,
-              status: options.status,
-              description: options.description,
-              philosophy: options.philosophy,
-              visualDescription: options.visualDescription,
+              name: data.name,
+              coworkerType: data.coworkerType,
+              status: data.status,
+              description: data.description,
+              philosophy: data.philosophy,
+              visualDescription: data.visualDescription,
             },
           },
           opts
@@ -321,14 +321,14 @@ program
     }
 
     const storage = await getStorage()
-    await updateCoworker(storage, options.name, {
-      coworkerType: options.coworkerType ?? null,
-      status: options.status ?? null,
-      description: options.description ?? null,
-      philosophy: options.philosophy ?? null,
-      visualDescription: options.visualDescription ?? null,
+    await updateCoworker(storage, data.name, {
+      coworkerType: data.coworkerType ?? null,
+      status: data.status ?? null,
+      description: data.description ?? null,
+      philosophy: data.philosophy ?? null,
+      visualDescription: data.visualDescription ?? null,
     })
-    const coworker = await getCoworkerInfo(storage, options.name)
+    const coworker = await getCoworkerInfo(storage, data.name)
     console.log(formatWithOptions(coworker, opts))
     await storage.close()
   })
@@ -336,23 +336,27 @@ program
 program
   .command('get-coworker-info')
   .description('Get coworker information (name, description, philosophy)')
-  .requiredOption('-n, --name <name>', 'Coworker name')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with name field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.name = rawData.name || options.name
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { name?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
     }
 
     const storage = await getStorage()
-    const coworker = await getCoworkerInfo(storage, options.name)
+    const coworker = await getCoworkerInfo(storage, data.name)
     console.log(formatWithOptions(coworker, opts))
     await storage.close()
   })
@@ -361,23 +365,31 @@ program
 program
   .command('send-message')
   .description('Send a message to one or more recipients')
-  .requiredOption('-f, --from <from>', 'Sender name')
-  .requiredOption('-t, --to <recipients...>', 'Recipient names')
-  .requiredOption('-b, --body <body>', 'Message body')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with from, to, and body fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.from = rawData.from || options.from
-        options.to = rawData.to || options.recipients || options.to
-        options.body = rawData.body || options.body
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { from?: string; to?: string[]; body?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.from) {
+      console.log(formatWithOptions({ error: 'Missing required field: from' }, opts))
+      process.exit(1)
+    }
+    if (!data.to || !Array.isArray(data.to) || data.to.length === 0) {
+      console.log(formatWithOptions({ error: 'Missing required field: to (must be array)' }, opts))
+      process.exit(1)
+    }
+    if (!data.body) {
+      console.log(formatWithOptions({ error: 'Missing required field: body' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('send-message')) {
@@ -386,7 +398,7 @@ program
           {
             dryRun: true,
             command: 'send-message',
-            params: { from: options.from, to: options.to, body: options.body },
+            params: { from: data.from, to: data.to, body: data.body },
           },
           opts
         )
@@ -395,7 +407,7 @@ program
     }
 
     const storage = await getStorage()
-    await sendMessage(storage, options.from, options.to, options.body)
+    await sendMessage(storage, data.from, data.to, data.body)
     console.log(formatWithOptions({ success: true, message: 'Message sent' }, opts))
     await storage.close()
   })
@@ -403,11 +415,27 @@ program
 program
   .command('check-unread-messages')
   .description('Check if there are unread messages for a coworker')
-  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
+  .requiredOption('--json <json>', 'Full JSON payload with coworker field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const result = await checkUnreadMail(storage, options.coworker)
+    const result = await checkUnreadMail(storage, data.coworker)
     console.log(formatWithOptions(result, opts))
     await storage.close()
   })
@@ -415,9 +443,24 @@ program
 program
   .command('get-unread-messages')
   .description('Get all unread messages for a coworker and mark as read')
-  .requiredOption('-c, --coworker <name>', 'Coworker name')
+  .requiredOption('--json <json>', 'Full JSON payload with coworker field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('get-unread-messages')) {
       console.log(
@@ -425,7 +468,7 @@ program
           {
             dryRun: true,
             command: 'get-unread-messages',
-            params: { coworker: options.coworker },
+            params: { coworker: data.coworker },
           },
           opts
         )
@@ -434,7 +477,7 @@ program
     }
 
     const storage = await getStorage()
-    const messages = await getUnreadMail(storage, options.coworker)
+    const messages = await getUnreadMail(storage, data.coworker)
     console.log(formatWithOptions(messages, opts))
     await storage.close()
   })
@@ -442,20 +485,31 @@ program
 program
   .command('list-messages-between')
   .description('Show all messages between two coworkers')
-  .requiredOption('--coworker1 <name>', 'First coworker name')
-  .requiredOption('--coworker2 <name>', 'Second coworker name')
-  .option('--start <isoTime>', 'Start time (ISO 8601 format)')
-  .option('--end <isoTime>', 'End time (ISO 8601 format)')
+  .requiredOption('--json <json>', 'Full JSON payload with coworker1, coworker2, and optional start/end fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker1?: string; coworker2?: string; start?: string; end?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker1) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker1' }, opts))
+      process.exit(1)
+    }
+    if (!data.coworker2) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker2' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const messages = await listMessagesBetween(
-      storage,
-      options.coworker1,
-      options.coworker2,
-      options.start,
-      options.end
-    )
+    const messages = await listMessagesBetween(storage, data.coworker1, data.coworker2, data.start, data.end)
     console.log(formatWithOptions(messages, opts))
     await storage.close()
   })
@@ -463,12 +517,31 @@ program
 program
   .command('list-messages-to-notify')
   .description('List unread messages older than specified hours that have not been notified')
-  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
-  .requiredOption('-H, --hours <hours>', 'Hours threshold for message age', parseFloat)
+  .requiredOption('--json <json>', 'Full JSON payload with coworker and hours fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker?: string; hours?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+    if (data.hours === undefined || data.hours === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: hours' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const messages = await listMessagesToNotify(storage, options.coworker, options.hours)
+    const messages = await listMessagesToNotify(storage, data.coworker, data.hours)
     console.log(formatWithOptions(messages, opts))
     await storage.close()
   })
@@ -476,9 +549,24 @@ program
 program
   .command('mark-messages-as-notified')
   .description('Mark specific messages as notified')
-  .requiredOption('-i, --ids <ids...>', 'Message IDs to mark', value => value.split(',').map(Number))
+  .requiredOption('--json <json>', 'Full JSON payload with ids array')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { ids?: number[] }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.ids || !Array.isArray(data.ids) || data.ids.length === 0) {
+      console.log(formatWithOptions({ error: 'Missing required field: ids (must be array of numbers)' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('mark-messages-as-notified')) {
       console.log(
@@ -486,7 +574,7 @@ program
           {
             dryRun: true,
             command: 'mark-messages-as-notified',
-            params: { ids: options.ids },
+            params: { ids: data.ids },
           },
           opts
         )
@@ -495,8 +583,8 @@ program
     }
 
     const storage = await getStorage()
-    await markMessagesAsNotified(storage, options.ids)
-    console.log(formatWithOptions({ success: true, marked: options.ids.length }, opts))
+    await markMessagesAsNotified(storage, data.ids)
+    console.log(formatWithOptions({ success: true, marked: data.ids.length }, opts))
     await storage.close()
   })
 
@@ -504,11 +592,27 @@ program
 program
   .command('list-crons')
   .description('List all cron jobs for a specific coworker')
-  .requiredOption('-c, --coworker <name>', 'Coworker name')
+  .requiredOption('--json <json>', 'Full JSON payload with coworker field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const crons = await listCrons(storage, options.coworker)
+    const crons = await listCrons(storage, data.coworker)
     console.log(formatWithOptions(crons, opts))
     await storage.close()
   })
@@ -516,9 +620,24 @@ program
 program
   .command('delete-cron')
   .description('Delete a cron job')
-  .requiredOption('-i, --id <id>', 'Cron job ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('delete-cron')) {
       console.log(
@@ -526,7 +645,7 @@ program
           {
             dryRun: true,
             command: 'delete-cron',
-            params: { id: options.id },
+            params: { id: data.id },
           },
           opts
         )
@@ -535,17 +654,32 @@ program
     }
 
     const storage = await getStorage()
-    await deleteCron(storage, options.id)
-    console.log(formatWithOptions({ success: true, message: `Cron job ${options.id} deleted` }, opts))
+    await deleteCron(storage, data.id)
+    console.log(formatWithOptions({ success: true, message: `Cron job ${data.id} deleted` }, opts))
     await storage.close()
   })
 
 program
   .command('enable-cron')
   .description('Enable a cron job')
-  .requiredOption('-i, --id <id>', 'Cron job ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('enable-cron')) {
       console.log(
@@ -553,7 +687,7 @@ program
           {
             dryRun: true,
             command: 'enable-cron',
-            params: { id: options.id },
+            params: { id: data.id },
           },
           opts
         )
@@ -562,17 +696,32 @@ program
     }
 
     const storage = await getStorage()
-    await enableCron(storage, options.id)
-    console.log(formatWithOptions({ success: true, message: `Cron job ${options.id} enabled` }, opts))
+    await enableCron(storage, data.id)
+    console.log(formatWithOptions({ success: true, message: `Cron job ${data.id} enabled` }, opts))
     await storage.close()
   })
 
 program
   .command('disable-cron')
   .description('Disable a cron job')
-  .requiredOption('-i, --id <id>', 'Cron job ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('disable-cron')) {
       console.log(
@@ -580,7 +729,7 @@ program
           {
             dryRun: true,
             command: 'disable-cron',
-            params: { id: options.id },
+            params: { id: data.id },
           },
           opts
         )
@@ -589,20 +738,36 @@ program
     }
 
     const storage = await getStorage()
-    await disableCron(storage, options.id)
-    console.log(formatWithOptions({ success: true, message: `Cron job ${options.id} disabled` }, opts))
+    await disableCron(storage, data.id)
+    console.log(formatWithOptions({ success: true, message: `Cron job ${data.id} disabled` }, opts))
     await storage.close()
   })
 
 program
   .command('cron-history')
   .description('Get cron job execution history')
-  .requiredOption('-i, --id <id>', 'Cron job ID', parseInt)
-  .option('-l, --limit <limit>', 'Number of history entries to show', '10')
+  .requiredOption('--json <json>', 'Full JSON payload with id and optional limit fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number; limit?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+
+    const limit = data.limit ?? 10
     const storage = await getStorage()
-    const history = await cronHistory(storage, options.id, parseInt(options.limit))
+    const history = await cronHistory(storage, data.id, limit)
     console.log(formatWithOptions(history, opts))
     await storage.close()
   })
@@ -610,11 +775,27 @@ program
 program
   .command('check-cron-jobs')
   .description('Check if there are any active cron jobs for a coworker this minute')
-  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
+  .requiredOption('--json <json>', 'Full JSON payload with coworker field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const result = await checkCronJobs(storage, options.coworker)
+    const result = await checkCronJobs(storage, data.coworker)
     console.log(formatWithOptions(result, opts))
     await storage.close()
   })
@@ -622,11 +803,27 @@ program
 program
   .command('list-active-cron-actions')
   .description('List all active cron actions for a specific coworker that should run this minute (for AI execution)')
-  .requiredOption('-c, --coworker <name>', 'Coworker name to check')
+  .requiredOption('--json <json>', 'Full JSON payload with coworker field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { coworker?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const jobs = await listActiveCronJobs(storage, options.coworker)
+    const jobs = await listActiveCronJobs(storage, data.coworker)
     console.log(formatWithOptions(jobs, opts))
     await storage.close()
   })
@@ -634,29 +831,43 @@ program
 program
   .command('create-cron')
   .description('Create a new cron job directly')
-  .requiredOption('-n, --name <name>', 'Cron job name')
-  .requiredOption('-c, --coworker <coworker>', 'Coworker name')
-  .requiredOption('-S, --schedule <schedule>', 'Cron schedule expression')
-  .requiredOption('-t, --task <task>', 'Task to perform (action to do)')
-  .requiredOption('-N, --notify <instructions>', 'Instructions on who to notify when complete')
-  .requiredOption('-z, --timezone <timezone>', 'Timezone')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with name, coworker, schedule, task, notify, and timezone fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.name = rawData.name || options.name
-        options.coworker = rawData.coworker || options.coworker
-        options.schedule = rawData.schedule || options.schedule
-        options.task = rawData.task || options.task
-        options.notify = rawData.notify || options.notify
-        options.timezone = rawData.timezone || options.timezone
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { name?: string; coworker?: string; schedule?: string; task?: string; notify?: string; timezone?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
+    }
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+    if (!data.schedule) {
+      console.log(formatWithOptions({ error: 'Missing required field: schedule' }, opts))
+      process.exit(1)
+    }
+    if (!data.task) {
+      console.log(formatWithOptions({ error: 'Missing required field: task' }, opts))
+      process.exit(1)
+    }
+    if (!data.notify) {
+      console.log(formatWithOptions({ error: 'Missing required field: notify' }, opts))
+      process.exit(1)
+    }
+    if (!data.timezone) {
+      console.log(formatWithOptions({ error: 'Missing required field: timezone' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('create-cron')) {
@@ -666,12 +877,12 @@ program
             dryRun: true,
             command: 'create-cron',
             params: {
-              name: options.name,
-              coworker: options.coworker,
-              schedule: options.schedule,
-              task: options.task,
-              notify: options.notify,
-              timezone: options.timezone,
+              name: data.name,
+              coworker: data.coworker,
+              schedule: data.schedule,
+              task: data.task,
+              notify: data.notify,
+              timezone: data.timezone,
             },
           },
           opts
@@ -681,8 +892,8 @@ program
     }
 
     const storage = await getStorage()
-    const message = `Action To Do:\n${options.task}\n\nWho To Notify When Complete:\n${options.notify}`
-    const cron = await createCron(storage, options.name, options.coworker, options.schedule, message, options.timezone)
+    const message = `Action To Do:\n${data.task}\n\nWho To Notify When Complete:\n${data.notify}`
+    const cron = await createCron(storage, data.name, data.coworker, data.schedule, message, data.timezone)
     console.log(formatWithOptions(cron, opts))
     await storage.close()
   })
@@ -702,29 +913,43 @@ program
 program
   .command('request-cron')
   .description('Create a new cron job request (requires approval)')
-  .requiredOption('-n, --name <name>', 'Cron job name')
-  .requiredOption('-c, --coworker <coworker>', 'Coworker name')
-  .requiredOption('-S, --schedule <schedule>', 'Cron schedule expression')
-  .requiredOption('-t, --task <task>', 'Task to perform')
-  .requiredOption('-N, --notify <instructions>', 'Instructions on who to notify when complete')
-  .requiredOption('-z, --timezone <timezone>', 'Timezone')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with name, coworker, schedule, task, notify, and timezone fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.name = rawData.name || options.name
-        options.coworker = rawData.coworker || options.coworker
-        options.schedule = rawData.schedule || options.schedule
-        options.task = rawData.task || options.task
-        options.notify = rawData.notify || options.notify
-        options.timezone = rawData.timezone || options.timezone
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { name?: string; coworker?: string; schedule?: string; task?: string; notify?: string; timezone?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
+    }
+    if (!data.coworker) {
+      console.log(formatWithOptions({ error: 'Missing required field: coworker' }, opts))
+      process.exit(1)
+    }
+    if (!data.schedule) {
+      console.log(formatWithOptions({ error: 'Missing required field: schedule' }, opts))
+      process.exit(1)
+    }
+    if (!data.task) {
+      console.log(formatWithOptions({ error: 'Missing required field: task' }, opts))
+      process.exit(1)
+    }
+    if (!data.notify) {
+      console.log(formatWithOptions({ error: 'Missing required field: notify' }, opts))
+      process.exit(1)
+    }
+    if (!data.timezone) {
+      console.log(formatWithOptions({ error: 'Missing required field: timezone' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('request-cron')) {
@@ -734,12 +959,12 @@ program
             dryRun: true,
             command: 'request-cron',
             params: {
-              name: options.name,
-              coworker: options.coworker,
-              schedule: options.schedule,
-              task: options.task,
-              notify: options.notify,
-              timezone: options.timezone,
+              name: data.name,
+              coworker: data.coworker,
+              schedule: data.schedule,
+              task: data.task,
+              notify: data.notify,
+              timezone: data.timezone,
             },
           },
           opts
@@ -749,15 +974,8 @@ program
     }
 
     const storage = await getStorage()
-    const message = `Action To Do:\n${options.task}\n\nWho To Notify When Complete:\n${options.notify}`
-    const request = await requestCron(
-      storage,
-      options.name,
-      options.coworker,
-      options.schedule,
-      message,
-      options.timezone
-    )
+    const message = `Action To Do:\n${data.task}\n\nWho To Notify When Complete:\n${data.notify}`
+    const request = await requestCron(storage, data.name, data.coworker, data.schedule, message, data.timezone)
     console.log(formatWithOptions(request, opts))
     await storage.close()
   })
@@ -765,11 +983,27 @@ program
 program
   .command('get-cron-request')
   .description('Get details of a cron job request')
-  .requiredOption('-i, --id <id>', 'Cron request ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const request = await getCronRequest(storage, options.id)
+    const request = await getCronRequest(storage, data.id)
     console.log(formatWithOptions(request, opts))
     await storage.close()
   })
@@ -777,11 +1011,28 @@ program
 program
   .command('approve-cron-request')
   .description('Approve a pending cron job request')
-  .requiredOption('-i, --id <id>', 'Cron request ID', parseInt)
-  .requiredOption('-r, --reviewer <name>', 'Name of the reviewer')
-  .option('-n, --notes <notes>', 'Optional reviewer notes')
+  .requiredOption('--json <json>', 'Full JSON payload with id, reviewer, and optional notes fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number; reviewer?: string; notes?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+    if (!data.reviewer) {
+      console.log(formatWithOptions({ error: 'Missing required field: reviewer' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('approve-cron-request')) {
       console.log(
@@ -789,7 +1040,7 @@ program
           {
             dryRun: true,
             command: 'approve-cron-request',
-            params: { id: options.id, reviewer: options.reviewer, notes: options.notes },
+            params: { id: data.id, reviewer: data.reviewer, notes: data.notes },
           },
           opts
         )
@@ -798,7 +1049,7 @@ program
     }
 
     const storage = await getStorage()
-    const result = await approveCronRequest(storage, options.id, options.reviewer, options.notes)
+    const result = await approveCronRequest(storage, data.id, data.reviewer, data.notes)
     console.log(formatWithOptions(result, opts))
     await storage.close()
   })
@@ -806,11 +1057,28 @@ program
 program
   .command('reject-cron-request')
   .description('Reject a pending cron job request')
-  .requiredOption('-i, --id <id>', 'Cron request ID', parseInt)
-  .requiredOption('-r, --reviewer <name>', 'Name of the reviewer')
-  .option('-n, --notes <notes>', 'Optional reviewer notes')
+  .requiredOption('--json <json>', 'Full JSON payload with id, reviewer, and optional notes fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number; reviewer?: string; notes?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+    if (!data.reviewer) {
+      console.log(formatWithOptions({ error: 'Missing required field: reviewer' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('reject-cron-request')) {
       console.log(
@@ -818,7 +1086,7 @@ program
           {
             dryRun: true,
             command: 'reject-cron-request',
-            params: { id: options.id, reviewer: options.reviewer, notes: options.notes },
+            params: { id: data.id, reviewer: data.reviewer, notes: data.notes },
           },
           opts
         )
@@ -827,7 +1095,7 @@ program
     }
 
     const storage = await getStorage()
-    const result = await rejectCronRequest(storage, options.id, options.reviewer, options.notes)
+    const result = await rejectCronRequest(storage, data.id, data.reviewer, data.notes)
     console.log(formatWithOptions(result, opts))
     await storage.close()
   })
@@ -835,9 +1103,24 @@ program
 program
   .command('delete-cron-request')
   .description('Delete a cron job request')
-  .requiredOption('-i, --id <id>', 'Cron request ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('delete-cron-request')) {
       console.log(
@@ -845,7 +1128,7 @@ program
           {
             dryRun: true,
             command: 'delete-cron-request',
-            params: { id: options.id },
+            params: { id: data.id },
           },
           opts
         )
@@ -854,8 +1137,8 @@ program
     }
 
     const storage = await getStorage()
-    await deleteCronRequest(storage, options.id)
-    console.log(formatWithOptions({ success: true, message: `Cron request ${options.id} deleted` }, opts))
+    await deleteCronRequest(storage, data.id)
+    console.log(formatWithOptions({ success: true, message: `Cron request ${data.id} deleted` }, opts))
     await storage.close()
   })
 
@@ -863,27 +1146,27 @@ program
 program
   .command('add-task')
   .description('Create a new task')
-  .requiredOption('-t, --title <title>', 'Task title')
-  .option('-d, --description <desc>', 'Task description', '')
-  .option('-a, --assignee <assignee>', 'Task assignee')
-  .requiredOption('-c, --column <column>', 'Initial column')
-  .option('--dependencies <deps...>', 'Task dependency IDs', [])
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with title, column, and optional fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.title = rawData.title || options.title
-        options.description = rawData.description || options.description
-        options.assignee = rawData.assignee || options.assignee
-        options.column = rawData.column || options.column
-        options.dependencies = rawData.dependencies || options.dependencies
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { title?: string; description?: string; assignee?: string; column?: string; dependencies?: number[] }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.title) {
+      console.log(formatWithOptions({ error: 'Missing required field: title' }, opts))
+      process.exit(1)
+    }
+    if (!data.column) {
+      console.log(formatWithOptions({ error: 'Missing required field: column' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('add-task')) {
@@ -893,11 +1176,11 @@ program
             dryRun: true,
             command: 'add-task',
             params: {
-              title: options.title,
-              description: options.description,
-              assignee: options.assignee,
-              column: options.column,
-              dependencies: options.dependencies,
+              title: data.title,
+              description: data.description,
+              assignee: data.assignee,
+              column: data.column,
+              dependencies: data.dependencies,
             },
           },
           opts
@@ -907,15 +1190,8 @@ program
     }
 
     const storage = await getStorage()
-    const deps = options.dependencies?.map((id: string) => parseInt(id)) || []
-    const task = await addTask(
-      storage,
-      options.title,
-      options.description,
-      options.assignee || null,
-      options.column,
-      deps
-    )
+    const deps = data.dependencies || []
+    const task = await addTask(storage, data.title, data.description || '', data.assignee || null, data.column, deps)
     console.log(formatWithOptions(task, opts))
     await storage.close()
   })
@@ -923,19 +1199,15 @@ program
 program
   .command('list-tasks')
   .description('List all tasks')
-  .option('-a, --assignee <assignee>', 'Filter by assignee')
-  .option('-c, --column <column>', 'Filter by column')
-  .option('-s, --search <query>', 'Search in title and description')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .option('--json <json>', 'Full JSON payload with optional assignee, column, and search fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
+    // Parse JSON input if provided
+    let data: { assignee?: string; column?: string; search?: string } = {}
+    if (options.json) {
       try {
-        const rawData = JSON.parse(opts.json)
-        options.assignee = rawData.assignee || options.assignee
-        options.column = rawData.column || options.column
-        options.search = rawData.search || rawData.query || options.search
+        data = JSON.parse(options.json)
       } catch (e) {
         console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
         process.exit(1)
@@ -943,7 +1215,7 @@ program
     }
 
     const storage = await getStorage()
-    const tasks = await listTasks(storage, options.assignee, options.column, options.search)
+    const tasks = await listTasks(storage, data.assignee, data.column, data.search)
     console.log(formatWithOptions(tasks, opts))
     await storage.close()
   })
@@ -951,23 +1223,27 @@ program
 program
   .command('get-task')
   .description('Get a task by ID')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.id = rawData.id || options.id
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
     }
 
     const storage = await getStorage()
-    const task = await getTask(storage, options.id)
+    const task = await getTask(storage, data.id)
     console.log(formatWithOptions(task, opts))
     await storage.close()
   })
@@ -975,29 +1251,30 @@ program
 program
   .command('update-task')
   .description('Update a task')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
-  .option('-t, --title <title>', 'New title')
-  .option('-d, --description <desc>', 'New description')
-  .option('-a, --assignee <assignee>', 'New assignee')
-  .option('-c, --column <column>', 'New column')
-  .option('--dependencies <deps...>', 'New dependency IDs')
-  .option('--json <json>', 'Full JSON payload for the command (replaces individual flags)')
+  .requiredOption('--json <json>', 'Full JSON payload with id and optional fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
 
-    if (opts.json) {
-      try {
-        const rawData = JSON.parse(opts.json)
-        options.id = rawData.id || options.id
-        if (rawData.title !== undefined) options.title = rawData.title
-        if (rawData.description !== undefined) options.description = rawData.description
-        if (rawData.assignee !== undefined) options.assignee = rawData.assignee
-        if (rawData.column !== undefined) options.column = rawData.column
-        if (rawData.dependencies !== undefined) options.dependencies = rawData.dependencies
-      } catch (e) {
-        console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
-        process.exit(1)
-      }
+    // Parse JSON input
+    let data: {
+      id?: number
+      title?: string
+      description?: string
+      assignee?: string
+      column?: string
+      dependencies?: number[]
+    }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
     }
 
     if (!shouldExecute('update-task')) {
@@ -1007,12 +1284,12 @@ program
             dryRun: true,
             command: 'update-task',
             params: {
-              id: options.id,
-              title: options.title,
-              description: options.description,
-              assignee: options.assignee,
-              column: options.column,
-              dependencies: options.dependencies,
+              id: data.id,
+              title: data.title,
+              description: data.description,
+              assignee: data.assignee,
+              column: data.column,
+              dependencies: data.dependencies,
             },
           },
           opts
@@ -1022,16 +1299,8 @@ program
     }
 
     const storage = await getStorage()
-    const deps = options.dependencies?.map((id: string) => parseInt(id))
-    const task = await updateTask(
-      storage,
-      options.id,
-      options.title,
-      options.description,
-      options.assignee,
-      options.column,
-      deps
-    )
+    const deps = data.dependencies
+    const task = await updateTask(storage, data.id, data.title, data.description, data.assignee, data.column, deps)
     console.log(formatWithOptions(task, opts))
     await storage.close()
   })
@@ -1039,9 +1308,24 @@ program
 program
   .command('delete-task')
   .description('Delete a task')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('delete-task')) {
       console.log(
@@ -1049,7 +1333,7 @@ program
           {
             dryRun: true,
             command: 'delete-task',
-            params: { id: options.id },
+            params: { id: data.id },
           },
           opts
         )
@@ -1058,18 +1342,36 @@ program
     }
 
     const storage = await getStorage()
-    await deleteTask(storage, options.id)
-    console.log(formatWithOptions({ success: true, message: `Task ${options.id} deleted` }, opts))
+    await deleteTask(storage, data.id)
+    console.log(formatWithOptions({ success: true, message: `Task ${data.id} deleted` }, opts))
     await storage.close()
   })
 
 program
   .command('assign-task')
   .description('Assign a task to someone')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
-  .requiredOption('-a, --assignee <assignee>', 'Assignee name')
+  .requiredOption('--json <json>', 'Full JSON payload with id and assignee fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number; assignee?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+    if (!data.assignee) {
+      console.log(formatWithOptions({ error: 'Missing required field: assignee' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('assign-task')) {
       console.log(
@@ -1077,7 +1379,7 @@ program
           {
             dryRun: true,
             command: 'assign-task',
-            params: { id: options.id, assignee: options.assignee },
+            params: { id: data.id, assignee: data.assignee },
           },
           opts
         )
@@ -1086,7 +1388,7 @@ program
     }
 
     const storage = await getStorage()
-    const task = await assignTask(storage, options.id, options.assignee)
+    const task = await assignTask(storage, data.id, data.assignee)
     console.log(formatWithOptions(task, opts))
     await storage.close()
   })
@@ -1094,9 +1396,24 @@ program
 program
   .command('unassign-task')
   .description('Remove assignment from a task')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('unassign-task')) {
       console.log(
@@ -1104,7 +1421,7 @@ program
           {
             dryRun: true,
             command: 'unassign-task',
-            params: { id: options.id },
+            params: { id: data.id },
           },
           opts
         )
@@ -1113,7 +1430,7 @@ program
     }
 
     const storage = await getStorage()
-    const task = await unassignTask(storage, options.id)
+    const task = await unassignTask(storage, data.id)
     console.log(formatWithOptions(task, opts))
     await storage.close()
   })
@@ -1121,10 +1438,28 @@ program
 program
   .command('move-task')
   .description('Move a task to a different column')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
-  .requiredOption('-c, --column <column>', 'Target column')
+  .requiredOption('--json <json>', 'Full JSON payload with id and column fields')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number; column?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+    if (!data.column) {
+      console.log(formatWithOptions({ error: 'Missing required field: column' }, opts))
+      process.exit(1)
+    }
 
     if (!shouldExecute('move-task')) {
       console.log(
@@ -1132,7 +1467,7 @@ program
           {
             dryRun: true,
             command: 'move-task',
-            params: { id: options.id, column: options.column },
+            params: { id: data.id, column: data.column },
           },
           opts
         )
@@ -1141,7 +1476,7 @@ program
     }
 
     const storage = await getStorage()
-    const task = await moveTask(storage, options.id, options.column)
+    const task = await moveTask(storage, data.id, data.column)
     console.log(formatWithOptions(task, opts))
     await storage.close()
   })
@@ -1160,11 +1495,27 @@ program
 program
   .command('task-history')
   .description('Show column transition history for a task with durations')
-  .requiredOption('-i, --id <id>', 'Task ID', parseInt)
+  .requiredOption('--json <json>', 'Full JSON payload with id field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
+
+    // Parse JSON input
+    let data: { id?: number }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (data.id === undefined || data.id === null) {
+      console.log(formatWithOptions({ error: 'Missing required field: id' }, opts))
+      process.exit(1)
+    }
+
     const storage = await getStorage()
-    const history = await getTaskHistory(storage, options.id)
+    const history = await getTaskHistory(storage, data.id)
     console.log(formatWithOptions(history, opts))
     await storage.close()
   })
@@ -1230,12 +1581,28 @@ program
 program
   .command('get-skill')
   .description('Get the content of a specific agent skill')
-  .requiredOption('-n, --name <name>', 'Skill name (e.g., create-coworker)')
+  .requiredOption('--json <json>', 'Full JSON payload with name field')
   .action(async (options, command) => {
     const opts = command.optsWithGlobals()
-    const content = getSkillContent(options.name)
+
+    // Parse JSON input
+    let data: { name?: string }
+    try {
+      data = JSON.parse(options.json)
+    } catch (e) {
+      console.log(formatWithOptions({ error: 'Invalid JSON in --json' }, opts))
+      process.exit(1)
+    }
+
+    // Validate required fields
+    if (!data.name) {
+      console.log(formatWithOptions({ error: 'Missing required field: name' }, opts))
+      process.exit(1)
+    }
+
+    const content = getSkillContent(data.name)
     if (!content) {
-      console.log(formatWithOptions({ error: `Skill not found: ${options.name}` }, opts))
+      console.log(formatWithOptions({ error: `Skill not found: ${data.name}` }, opts))
       process.exit(1)
     }
     console.log(content) // Output raw markdown content
