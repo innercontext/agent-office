@@ -251,16 +251,40 @@ program
     }
 
     if (!shouldExecute('delete-coworker')) {
+      // Get counts of what will be cascaded
+      const storage = await getStorage()
+      const session = await storage.getSessionByName(data.name)
+      let cascadeInfo = {}
+
+      if (session) {
+        const receivedMessages = await storage.listMessagesForRecipient(data.name)
+        const sentMessages = await storage.listMessagesFromSender(data.name)
+        const cronJobs = await storage.listCronJobsForSession(data.name)
+        const cronRequests = await storage.listCronRequests({ sessionName: data.name })
+        const tasks = await storage.searchTasks('', { assignee: data.name })
+
+        cascadeInfo = {
+          messagesToDelete: receivedMessages.length + sentMessages.length,
+          cronJobsToDelete: cronJobs.length,
+          cronRequestsToDelete: cronRequests.length,
+          tasksToUnassign: tasks.length,
+        }
+      }
+
       console.log(
         formatWithOptions(
           {
             dryRun: true,
             command: 'delete-coworker',
             params: { name: data.name },
+            cascade: cascadeInfo,
+            warning:
+              'This will permanently delete all messages, cron jobs, and cron requests associated with this coworker',
           },
           opts
         )
       )
+      await storage.close()
       return
     }
 
