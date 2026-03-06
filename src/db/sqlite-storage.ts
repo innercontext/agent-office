@@ -1059,8 +1059,6 @@ export class AgentOfficeSqliteStorage extends AgentOfficeStorageBase {
     for (const migration of MIGRATIONS) {
       if (appliedVersions.has(migration.version)) continue
 
-      console.log(`  Applying migration ${migration.version}: ${migration.name}`)
-
       // Run migration in a transaction
       const migrate = this.db.transaction(() => {
         this.db.exec(migration.sql)

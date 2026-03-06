@@ -44,14 +44,14 @@ import { listSkills, getSkillContent, getContextDoc, getAgentsDoc } from '../ind
 
 interface JSONRPCRequest {
   jsonrpc: '2.0'
-  id: string | number
+  id?: string | number | null
   method: string
   params?: Record<string, unknown>
 }
 
 interface JSONRPCResponse {
   jsonrpc: '2.0'
-  id: string | number
+  id: string | number | null
   result?: unknown
   error?: {
     code: number
@@ -304,15 +304,18 @@ export class MCPServer {
     }
   }
 
-  async handleRequest(request: JSONRPCRequest): Promise<JSONRPCResponse> {
+  async handleRequest(request: JSONRPCRequest): Promise<JSONRPCResponse | null> {
     const { id, method, params = {} } = request
+
+    console.error(`[MCP] Received: ${method} (id: ${id ?? 'notification'})`)
 
     try {
       switch (method) {
         case 'initialize':
+          console.error('[MCP] Handling initialize')
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             result: {
               protocolVersion: '2024-11-05',
               capabilities: {
@@ -320,15 +323,20 @@ export class MCPServer {
               },
               serverInfo: {
                 name: 'agent-office',
-                version: '0.7.4',
+                version: '0.7.6',
               },
             },
           }
 
+        case 'notifications/initialized':
+          console.error('[MCP] Client initialized notification received')
+          return null
+
         case 'tools/list':
+          console.error('[MCP] Handling tools/list')
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             result: { tools: this.listTools() },
           }
 
@@ -336,10 +344,13 @@ export class MCPServer {
           const toolName = params.name as string
           const toolParams = (params.arguments as Record<string, unknown>) || {}
 
+          console.error(`[MCP] tools/call: ${toolName}`)
+
           if (!this.tools.has(toolName)) {
+            console.error(`[MCP] Tool not found: ${toolName}`)
             return {
               jsonrpc: '2.0',
-              id,
+              id: id ?? null,
               error: {
                 code: -32601,
                 message: `Tool not found: ${toolName}`,
@@ -347,19 +358,54 @@ export class MCPServer {
             }
           }
 
-          // Actually execute the command
-          const result = await this.executeCommand(toolName, toolParams)
-          return {
-            jsonrpc: '2.0',
-            id,
-            result,
+          console.error(`[MCP] Executing: ${toolName}`)
+          try {
+            const result = await this.executeCommand(toolName, toolParams)
+            console.error(`[MCP] Success: ${toolName}, result:`, JSON.stringify(result).slice(0, 100))
+
+            // Format result according to MCP spec (content array with text)
+            const mcpResult = {
+              content: [
+                {
+                  type: 'text',
+                  text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+                },
+              ],
+              isError: false,
+            }
+
+            return {
+              jsonrpc: '2.0',
+              id: id ?? null,
+              result: mcpResult,
+            }
+          } catch (err) {
+            console.error(`[MCP] Error executing ${toolName}:`, err)
+
+            // Format error according to MCP spec
+            const errorResult = {
+              content: [
+                {
+                  type: 'text',
+                  text: err instanceof Error ? err.message : String(err),
+                },
+              ],
+              isError: true,
+            }
+
+            return {
+              jsonrpc: '2.0',
+              id: id ?? null,
+              result: errorResult,
+            }
           }
         }
 
         default:
+          console.error(`[MCP] Unknown method: ${method}`)
           return {
             jsonrpc: '2.0',
-            id,
+            id: id ?? null,
             error: {
               code: -32601,
               message: `Method not found: ${method}`,
@@ -367,9 +413,10 @@ export class MCPServer {
           }
       }
     } catch (error) {
+      console.error(`[MCP] Error:`, error)
       return {
         jsonrpc: '2.0',
-        id,
+        id: id ?? null,
         error: {
           code: -32603,
           message: error instanceof Error ? error.message : 'Internal error',
@@ -400,11 +447,13 @@ export class MCPServer {
         try {
           const request = JSON.parse(line) as JSONRPCRequest
           const response = await this.handleRequest(request)
-          stdout.write(JSON.stringify(response) + '\n')
+          if (response !== null) {
+            stdout.write(JSON.stringify(response) + '\n')
+          }
         } catch (error) {
           const errorResponse: JSONRPCResponse = {
             jsonrpc: '2.0',
-            id: null as unknown as string,
+            id: null,
             error: {
               code: -32700,
               message: 'Parse error',

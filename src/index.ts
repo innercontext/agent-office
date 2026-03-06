@@ -124,14 +124,6 @@ program
   .addOption(new Option('--dry-run', 'Validate commands without executing mutating operations'))
   .hook('preAction', async thisCommand => {
     const opts = thisCommand.opts()
-    const commandName = thisCommand.args[0] // Get the command name
-
-    // For MCP command, suppress stdout to avoid corrupting JSON-RPC
-    const originalStdoutWrite = process.stdout.write
-    if (commandName === 'mcp') {
-      process.stdout.write = () => true
-    }
-
     if (opts.sqlite && opts.postgresql) {
       throw new Error('Cannot use both --sqlite and --postgresql options. Please specify only one.')
     }
@@ -142,12 +134,6 @@ program
       storage = createPostgresqlStorage(opts.postgresql)
       await storage.runMigrations()
     }
-
-    // Restore stdout after migrations
-    if (commandName === 'mcp') {
-      process.stdout.write = originalStdoutWrite
-    }
-
     isDryRun = opts.dryRun || false
   })
 

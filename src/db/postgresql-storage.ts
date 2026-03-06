@@ -745,7 +745,6 @@ export class AgentOfficePostgresqlStorage extends AgentOfficeStorageBase {
     for (const migration of MIGRATIONS) {
       if (appliedVersions.has(migration.version)) continue
 
-      console.log(`  Applying migration ${migration.version}: ${migration.name}`)
       await this.sql.begin(async tx => {
         await tx.unsafe(migration.sql)
         await tx.unsafe(`INSERT INTO _migrations (version, name) VALUES ($1, $2)`, [migration.version, migration.name])
