@@ -1555,7 +1555,7 @@ program
 
 // Skill and context commands
 
-function listSkills(): string[] {
+export function listSkills(): string[] {
   try {
     const skillsDir = join(__dirname, '../skills')
     return readdirSync(skillsDir)
@@ -1566,7 +1566,7 @@ function listSkills(): string[] {
   }
 }
 
-function getSkillContent(skillName: string): string | null {
+export function getSkillContent(skillName: string): string | null {
   try {
     const skillPath = join(__dirname, `../skills/SKILL-${skillName}.md`)
     return readFileSync(skillPath, 'utf-8')
@@ -1575,7 +1575,7 @@ function getSkillContent(skillName: string): string | null {
   }
 }
 
-function getContextDoc(): string | null {
+export function getContextDoc(): string | null {
   try {
     const contextPath = join(__dirname, '../CONTEXT.md')
     return readFileSync(contextPath, 'utf-8')
@@ -1584,7 +1584,7 @@ function getContextDoc(): string | null {
   }
 }
 
-function getAgentsDoc(): string | null {
+export function getAgentsDoc(): string | null {
   try {
     const agentsPath = join(__dirname, '../AGENTS.md')
     return readFileSync(agentsPath, 'utf-8')
@@ -1663,7 +1663,16 @@ program
   .command('mcp')
   .description('Run as an MCP (Model Context Protocol) server')
   .action(async () => {
-    const server = new MCPServer()
+    // Storage should already be initialized by global preAction hook
+    // if --sqlite or --postgresql was provided
+    if (!storage) {
+      console.error(
+        'Error: MCP server requires --sqlite or --postgresql option, or AGENT_OFFICE_SQLITE/AGENT_OFFICE_POSTGRESQL environment variable'
+      )
+      process.exit(1)
+    }
+
+    const server = new MCPServer(storage)
     await server.processStdio()
   })
 
