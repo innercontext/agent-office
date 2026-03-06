@@ -320,7 +320,7 @@ export class MCPServer {
               },
               serverInfo: {
                 name: 'agent-office',
-                version: '0.7.3',
+                version: '0.7.4',
               },
             },
           }
