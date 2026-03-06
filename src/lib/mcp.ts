@@ -309,6 +309,22 @@ export class MCPServer {
 
     try {
       switch (method) {
+        case 'initialize':
+          return {
+            jsonrpc: '2.0',
+            id,
+            result: {
+              protocolVersion: '2024-11-05',
+              capabilities: {
+                tools: {},
+              },
+              serverInfo: {
+                name: 'agent-office',
+                version: '0.7.3',
+              },
+            },
+          }
+
         case 'tools/list':
           return {
             jsonrpc: '2.0',
